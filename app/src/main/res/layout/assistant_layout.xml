@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    xmlns:tools="http://schemas.android.com/tools">
+
+
+    <ImageView
+        android:id="@+id/background_image_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitCenter"
+        />
+
+    <FrameLayout
+        android:id="@+id/main_frame"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_gravity="end"
+        >
+
+    <TextView
+        android:id="@+id/choose_field_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/choose_field"
+        android:layout_gravity="center"
+        android:textColor="@color/orange_700"
+        android:textSize="22sp"
+        android:paddingEnd="4dp"
+        android:paddingStart="4dp"
+        />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <ImageButton
+        android:id="@+id/assistant_icon"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        tools:src="@drawable/icon_1"
+        android:scaleType="centerCrop"
+        android:background="#00ffffff"
+        />
+
+            <Button
+                android:id="@+id/crop_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="crop"
+                android:background="@color/orange_700"
+                android:layout_gravity="center"/>
+
+    </LinearLayout>
+        </LinearLayout>
+
+
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_gravity="center"
+        android:visibility="gone"
+        />
+
+</FrameLayout>
