@@ -1,6 +1,7 @@
 package com.sychev.assistantapp.ui
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
 import android.graphics.*
 import android.graphics.drawable.ColorDrawable
@@ -23,35 +24,52 @@ import com.sychev.assistantapp.utils.MyObjectDetector
 
 
 class Assistant(
-        private val context: Context,
-        private val mediaProjection: MediaProjection
+    private val context: Context,
+    private val mediaProjection: MediaProjection
 ) {
 
     private var isActive = false
-    private val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-    private val layoutInflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+    private val layoutInflater =
+        context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
     private val rootView = layoutInflater.inflate(R.layout.assistant_layout, null)
-    private val objectDetector = MyObjectDetector().instance
+
+        private val objectDetector = MyObjectDetector().instance
     private var screenshot: Bitmap? = null
     private var myRectangleView: ResizableRectangleView? = null
-
     private val displayMetrics = DisplayMetrics()
 
-    private val display: Display = (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-        context.display!!
-    else
-        @Suppress("DEPRECATION")
-        windowManager.defaultDisplay).also {
-            it?.getRealMetrics(displayMetrics)
+    private var heightPx: Int = 0
+    private var widthPx: Int = 0
+
+    private val windowManager = (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).also { wm ->
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val windowsMetrics = wm.currentWindowMetrics
+            val windowInsets = windowsMetrics.windowInsets
+            val insets = windowInsets.getInsetsIgnoringVisibility(
+                WindowInsets.Type.navigationBars() or WindowInsets.Type.displayCutout()
+            )
+            val insetsWidth = insets.right + insets.left
+            val insetsHeight = insets.top + insets.bottom
+            val bounds = windowsMetrics.bounds
+            widthPx = bounds.width() - insetsWidth
+            heightPx = bounds.height() - insetsHeight
+        } else {
+            val size = Point()
+            val display = wm.defaultDisplay
+            display.getSize(size)
+            widthPx = size.x
+            heightPx = size.y
+        }
     }
-    private val heightPx = displayMetrics.heightPixels
-    private val widthPx = displayMetrics.widthPixels
-    @SuppressLint("WrongConstant")
+
+
+
+        @SuppressLint("WrongConstant")
     private val imageReader = ImageReader.newInstance(widthPx, heightPx, PixelFormat.RGBA_8888, 1)
             .also {
                 val flags = DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY or
                         DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
-                mediaProjection.createVirtualDisplay("screen_display", widthPx, heightPx, displayMetrics.densityDpi, flags, it.surface, null, null)
+                mediaProjection.createVirtualDisplay("screen_display", widthPx, heightPx, context.resources.displayMetrics.densityDpi, flags, it.surface, null, null)
             }
 
     private val iconButton = rootView.findViewById<ImageButton>(R.id.assistant_icon)
@@ -63,9 +81,6 @@ class Assistant(
         setOnClickListener {
             Log.d(TAG, "onClick: $screenshot")
             screenshot?.let{screenshot ->
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q){
-                    return@let
-                }else {
 //                    val fileName = "bitmap.png"
 //                    val stream = context.openFileOutput(fileName, Context.MODE_PRIVATE)
 //                    screenshot.compress(Bitmap.CompressFormat.PNG, 100, stream)
@@ -93,7 +108,7 @@ class Assistant(
                         view.setImageBitmap(croppedBtm)
                         mainFrame.addView(view, params)
                         removeRectangle()
-                    }
+
 
                 }
             }
@@ -101,20 +116,20 @@ class Assistant(
     }
 
     private val windowParams = WindowManager.LayoutParams(
-            widthPx / 3,
-            heightPx / 5,
-            0,
-            0,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-            } else {
-                WindowManager.LayoutParams.TYPE_PHONE
-            },
-            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
-                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                    WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
-            PixelFormat.TRANSLUCENT
+        widthPx / 3,
+        heightPx / 5,
+        0,
+        0,
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+        } else {
+            WindowManager.LayoutParams.TYPE_PHONE
+        },
+        WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+        PixelFormat.TRANSLUCENT
     ).apply {
         gravity = Gravity.TOP or Gravity.END
 
@@ -228,12 +243,12 @@ class Assistant(
     private fun changeIsActive() {
         isActive = !isActive
     }
-    
+
     private fun showProgressBar() {
         progressBar.visibility = View.VISIBLE
         updateWindowManager()
     }
-    
+
     private fun hideProgressBar() {
         progressBar.visibility = View.GONE
         updateWindowManager()
