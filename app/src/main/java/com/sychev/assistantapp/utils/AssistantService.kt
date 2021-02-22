@@ -53,6 +53,7 @@ class AssistantService: Service() {
             val projectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
             val mProjection = projectionManager.getMediaProjection(mResultCode, mData!!)
 //
+            //crushes on api 30 couse of lines 57-60
             assistant = Assistant(
                 context = applicationContext,
                 mProjection

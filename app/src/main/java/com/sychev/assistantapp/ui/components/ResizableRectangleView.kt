@@ -1,21 +1,24 @@
-package com.sychev.assistantapp.ui
+package com.sychev.assistantapp.ui.components
 
 import android.R
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.*
-import android.graphics.drawable.BitmapDrawable
-import android.util.AttributeSet
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import androidx.annotation.DrawableRes
-import com.google.mlkit.vision.objects.DetectedObject
+import com.sychev.assistantapp.ui.TAG
 import java.util.*
 
-
 @SuppressLint("ViewConstructor")
-class DetectorRectangleView(context: Context, detectedObject: DetectedObject?) : View(context) {
+class ResizableRectangleView(
+    context: Context,
+    private val xCoordinates: List<Float>,
+    private val yCoordinates: List<Float>) : View(context) {
     var points = arrayOfNulls<Point>(4)
+
+
 
 
     var groupId = -1
@@ -26,26 +29,31 @@ class DetectorRectangleView(context: Context, detectedObject: DetectedObject?) :
 
     // variable to know what ball is being dragged
     private val paint: Paint = Paint()
-    private val myLeft = detectedObject?.boundingBox?.left ?: 400
-    private val myRight = detectedObject?.boundingBox?.right ?: 400
-    private val myTop = detectedObject?.boundingBox?.top ?: 400
-    private val myBottom= detectedObject?.boundingBox?.bottom ?: 400
+//    private val myLeft = detectedObject?.boundingBox?.left ?: 400
+//    private val myRight = detectedObject?.boundingBox?.right ?: 400
+//    private val myTop = detectedObject?.boundingBox?.top ?: 400
+//    private val myBottom= detectedObject?.boundingBox?.bottom ?: 400
+    var rectLeft = findLeftX() ?: 0
+    var rectRight = findRightX() ?: 0
+    var rectTop = findTopY() ?: 0
+    var rectBottom= findBottomY() ?: 0
+
 
     init {
         isFocusable = true
 
         points[0] = Point()
-        points[0]!!.x = myLeft
-        points[0]!!.y = myTop
+        points[0]!!.x = rectLeft
+        points[0]!!.y = rectTop
         points[1] = Point()
-        points[1]!!.x = myLeft
-        points[1]!!.y = myBottom
+        points[1]!!.x = rectLeft
+        points[1]!!.y = rectBottom
         points[2] = Point()
-        points[2]!!.x = myRight
-        points[2]!!.y = myBottom
+        points[2]!!.x = rectRight
+        points[2]!!.y = rectBottom
         points[3] = Point()
-        points[3]!!.x = myRight
-        points[3]!!.y = myTop
+        points[3]!!.x = rectRight
+        points[3]!!.y = rectTop
         balID = 2
         groupId = 1
         // declare each ball with the ColorBall class
@@ -111,8 +119,12 @@ class DetectorRectangleView(context: Context, detectedObject: DetectedObject?) :
                 ball.bitmap, ball.x.toFloat(), ball.y.toFloat(),
                 paint
             )
-            canvas.drawText("" + (i + 1), ball.x.toFloat(), ball.y.toFloat(), paint!!)
+            canvas.drawText("" + (i + 1), ball.x.toFloat(), ball.y.toFloat(), paint)
         }
+        rectLeft = if (left < right) left else right
+        rectRight =  if (left < right) right else left
+        rectTop = if (top < bottom) top else bottom
+        rectBottom = if (top < bottom) bottom else top
     }
 
     // events when touching the screen
@@ -140,6 +152,7 @@ class DetectorRectangleView(context: Context, detectedObject: DetectedObject?) :
                         )
                     if (radCircle < ball.widthOfBall) {
                         balID = ball.iD
+                        Log.d(TAG, "onTouchEvent: ActionDown: balID = $balID")
                         groupId = if (balID == 1 || balID == 3) {
                             2
                         } else {
@@ -168,6 +181,7 @@ class DetectorRectangleView(context: Context, detectedObject: DetectedObject?) :
                     colorballs[2].x = colorballs[3].x
                     colorballs[2].y = colorballs[1].y
                 }
+                Log.d(TAG, "onTouchEvent: Moving rectangle2")
                 invalidate()
             }
             MotionEvent.ACTION_UP -> {
@@ -177,11 +191,14 @@ class DetectorRectangleView(context: Context, detectedObject: DetectedObject?) :
         return true
     }
 
-    class ColorBall(context: Context, @DrawableRes resourceId: Int, point: Point?) {
-        var bitmap: Bitmap
-        var mContext: Context
-        var point: Point?
-        var iD: Int
+    class ColorBall(context: Context, @DrawableRes resourceId: Int, var point: Point?) {
+        var bitmap: Bitmap = BitmapFactory.decodeResource(
+            context.resources,
+            resourceId
+        )
+        var iD: Int = count++.also {
+            if (count == 4) count = 0
+        }
         val widthOfBall: Int
             get() = bitmap.width
         val heightOfBall: Int
@@ -201,14 +218,41 @@ class DetectorRectangleView(context: Context, detectedObject: DetectedObject?) :
             var count = 0
         }
 
-        init {
-            iD = count++
-            bitmap = BitmapFactory.decodeResource(
-                context.resources,
-                resourceId
-            )
-            mContext = context
-            this.point = point
-        }
     }
+
+    private fun findLeftX(): Int? {
+        val sorted = xCoordinates.sorted()
+        Log.d(TAG, "findLeftX: sortedList = $sorted")
+        return xCoordinates.minOrNull()?.toInt()
+    }
+
+    private fun findRightX(): Int? {
+        return xCoordinates.maxOrNull()?.toInt()
+    }
+
+    private fun findTopY(): Int? {
+        return yCoordinates.minOrNull()?.toInt()
+    }
+
+    private fun findBottomY(): Int? {
+        return yCoordinates.maxOrNull()?.toInt()
+    }
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

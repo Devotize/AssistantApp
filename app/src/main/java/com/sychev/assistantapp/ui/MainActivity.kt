@@ -69,12 +69,13 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        Log.d(TAG, "onActivityResult: called")
         if (resultCode == RESULT_OK && requestCode == PROJECTION_MANAGER_PERMISSION_CODE && data != null){
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                Intent(this, AssistantService::class.java,).also {
+                Intent(applicationContext, AssistantService::class.java,).also {
+                    Log.d(TAG, "onActivityResult: trying to start service")
                     it.putExtra("data", data)
                     it.putExtra("result_code", resultCode)
                     startForegroundService(it)

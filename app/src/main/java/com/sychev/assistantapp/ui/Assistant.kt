@@ -1,34 +1,25 @@
 package com.sychev.assistantapp.ui
 
 import android.annotation.SuppressLint
-import android.app.ActionBar
 import android.content.Context
-import android.content.Intent
-import android.content.res.Resources
 import android.graphics.*
-import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
-import android.graphics.drawable.Drawable
 import android.hardware.display.DisplayManager
 import android.media.Image.Plane
 import android.media.ImageReader
 import android.media.projection.MediaProjection
 import android.os.Build
-import android.os.Bundle
 import android.util.DisplayMetrics
 import android.util.Log
 import android.view.*
 import android.widget.*
-import androidx.compose.material.Text
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.platform.ComposeView
 import androidx.core.content.ContextCompat
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.objects.DetectedObject
 import com.sychev.assistantapp.R
+import com.sychev.assistantapp.ui.components.DrawLineView
+import com.sychev.assistantapp.ui.components.ResizableRectangleView
 import com.sychev.assistantapp.utils.MyObjectDetector
-import de.hdodenhof.circleimageview.CircleImageView
 
 
 class Assistant(
@@ -42,6 +33,7 @@ class Assistant(
     private val rootView = layoutInflater.inflate(R.layout.assistant_layout, null)
     private val objectDetector = MyObjectDetector().instance
     private var screenshot: Bitmap? = null
+    private var myRectangleView: ResizableRectangleView? = null
 
     private val displayMetrics = DisplayMetrics()
 
@@ -57,7 +49,8 @@ class Assistant(
     @SuppressLint("WrongConstant")
     private val imageReader = ImageReader.newInstance(widthPx, heightPx, PixelFormat.RGBA_8888, 1)
             .also {
-                val flags = DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR
+                val flags = DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY or
+                        DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
                 mediaProjection.createVirtualDisplay("screen_display", widthPx, heightPx, displayMetrics.densityDpi, flags, it.surface, null, null)
             }
 
@@ -71,18 +64,37 @@ class Assistant(
             Log.d(TAG, "onClick: $screenshot")
             screenshot?.let{screenshot ->
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q){
-                    showObjectFrame(null)
+                    return@let
                 }else {
-                    val fileName = "bitmap.png"
-                    val stream = context.openFileOutput(fileName, Context.MODE_PRIVATE)
-                    screenshot.compress(Bitmap.CompressFormat.PNG, 100, stream)
-                    stream.close()
+//                    val fileName = "bitmap.png"
+//                    val stream = context.openFileOutput(fileName, Context.MODE_PRIVATE)
+//                    screenshot.compress(Bitmap.CompressFormat.PNG, 100, stream)
+//                    stream.close()
+//
+//                    val intent = Intent(context, CropActivity::class.java)
+//                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+//                    intent.putExtra("screenshot", fileName)
+//                    context.startActivity(intent)
+//                    close()
+                    myRectangleView?.let{
+                        val croppedBtm = Bitmap.createBitmap(screenshot.width, screenshot.height, Bitmap.Config.ARGB_8888)
+                        val canvas = Canvas(croppedBtm)
+                        val paint = Paint()
+                        paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
+                        val srcRect = Rect(it.rectLeft, it.rectTop, it.rectRight, it.rectBottom)
+                        val destRect = Rect(0, 0, it.rectLeft + it.rectRight, it.rectTop + it.rectBottom)
+                        canvas.drawBitmap(screenshot, srcRect, destRect, Paint())
+                        val view = ImageView(context)
+                        val params = FrameLayout.LayoutParams(
+                            it.left + it.right,
+                            it.top + it.bottom,
+                            Gravity.CENTER
+                        )
+                        view.setImageBitmap(croppedBtm)
+                        mainFrame.addView(view, params)
+                        removeRectangle()
+                    }
 
-                    val intent = Intent(context, CropActivity::class.java)
-                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                    intent.putExtra("screenshot", fileName)
-                    context.startActivity(intent)
-                    close()
                 }
             }
         }
@@ -119,8 +131,26 @@ class Assistant(
     private fun onIconClicked() {
         changeIsActive()
         takeScreenshot()
+        initDrawLine()
         refreshAssistantView()
         updateWindowManager()
+    }
+
+    private fun initDrawLine() {
+        val layoutParams = FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+        )
+        DrawLineView(context).also {view ->
+            view.setOnTouchListener { v, event ->
+                if (event.action == MotionEvent.ACTION_UP) {
+//                    Log.d(TAG, "initDrawLine: drawing rectangle listX = ${view.touchedCoordinatesX}, \n listY = ${view.touchedCoordinatesY}")
+                    showObjectFrame(view.touchedCoordinatesX, view.touchedCoordinatesY)
+                }
+                false
+            }
+            mainFrame.addView(view, layoutParams)
+        }
     }
 
     private fun refreshAssistantView() {
@@ -157,10 +187,12 @@ class Assistant(
         val rowPadding = rowStride - pixelStride * image.width
         val bmp = Bitmap.createBitmap(image.width + rowPadding / pixelStride, image.height, Bitmap.Config.ARGB_8888)
         bmp.copyPixelsFromBuffer(buffer)
+        val newBitmap = Bitmap.createBitmap(bmp, 0,0, image.width, image.height)
         image.close()
         mainFrame.visibility = View.VISIBLE
         updateWindowManager()
-        screenshot = bmp
+//        screenshot = bmp
+        screenshot = newBitmap
     }
 
     private fun detectImage(bitmap: Bitmap) {
@@ -175,7 +207,7 @@ class Assistant(
                         addCircleForDetectedObject(it)
                     }
                 } else {
-                    addNoObjectsFoundTv()
+//                    addNoObjectsFoundTv()
                 }
 //                Log.d(TAG, "detectImage: centerY = ${it[0].boundingBox.centerY()}")
 
@@ -270,10 +302,11 @@ class Assistant(
         mainFrame.addView(tv, tvParams)
     }
 
-    private fun showObjectFrame(detectedObject: DetectedObject?) {
+    private fun showObjectFrame(xList: List<Float>, yList: List<Float>) {
         clearMainFrame()
-        val view = DetectorRectangleView(context, detectedObject)
-        mainFrame.addView(view)
+        myRectangleView = ResizableRectangleView(context, xList, yList).also {
+            mainFrame.addView(it)
+        }
     }
 
     private fun addNoObjectsFoundTv() {
@@ -288,6 +321,12 @@ class Assistant(
             setTextColor(ContextCompat.getColor(context, R.color.orange_700))
         }
         mainFrame.addView(tv, params)
+    }
+
+    private fun removeRectangle() {
+        myRectangleView?.let{
+            mainFrame.removeView(it)
+        }
     }
 
 }
