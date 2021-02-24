@@ -68,23 +68,31 @@ class MainActivity : AppCompatActivity() {
 
     }
 
+    private fun Context.startAssistantService(intent: Intent) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            this.startForegroundService(intent)
+        } else {
+            this.startService(intent)
+        }
+    }
+
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         Log.d(TAG, "onActivityResult: called")
         if (resultCode == RESULT_OK && requestCode == PROJECTION_MANAGER_PERMISSION_CODE && data != null){
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 Intent(applicationContext, AssistantService::class.java,).also {
                     Log.d(TAG, "onActivityResult: trying to start service")
                     it.putExtra("data", data)
                     it.putExtra("result_code", resultCode)
-                    startForegroundService(it)
+                    startAssistantService(it)
                 }
-            } else {
-                val projectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-                val mProjection = projectionManager.getMediaProjection(resultCode, data)
-                viewModel.startAssistant(this, mProjection)
-            }
+//            } else {
+//                val projectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+//                val mProjection = projectionManager.getMediaProjection(resultCode, data)
+//                viewModel.startAssistant(this, mProjection)
+//            }
 
         } else {
             viewModel.mediaProjectorPermission(this)

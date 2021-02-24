@@ -25,10 +25,11 @@
         </activity>
         <activity android:name="com.theartofdev.edmodo.cropper.CropImageActivity"
             android:theme="@style/Base.Theme.AppCompat"/>
-        <service android:name=".utils.AssistantService"
-            android:foregroundServiceType="mediaProjection">
-
-        </service>
+        <service
+            android:name=".utils.AssistantService"
+            android:foregroundServiceType="mediaProjection"
+            android:stopWithTask="false"
+            />
     </application>
 
 </manifest>

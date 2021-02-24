@@ -1,7 +1,6 @@
-package com.sychev.assistantapp.ui
+package com.sychev.assistantapp.ui.assistant
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Context
 import android.graphics.*
 import android.graphics.drawable.ColorDrawable
@@ -10,7 +9,6 @@ import android.media.Image.Plane
 import android.media.ImageReader
 import android.media.projection.MediaProjection
 import android.os.Build
-import android.util.DisplayMetrics
 import android.util.Log
 import android.view.*
 import android.widget.*
@@ -18,9 +16,12 @@ import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.objects.DetectedObject
 import com.sychev.assistantapp.R
+import com.sychev.assistantapp.ml.TfliteTestModel
+import com.sychev.assistantapp.ui.TAG
 import com.sychev.assistantapp.ui.components.DrawLineView
 import com.sychev.assistantapp.ui.components.ResizableRectangleView
 import com.sychev.assistantapp.utils.MyObjectDetector
+import org.tensorflow.lite.support.image.TensorImage
 
 
 class Assistant(
@@ -33,10 +34,9 @@ class Assistant(
         context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
     private val rootView = layoutInflater.inflate(R.layout.assistant_layout, null)
 
-        private val objectDetector = MyObjectDetector().instance
+    private val objectDetector = MyObjectDetector().instance
     private var screenshot: Bitmap? = null
     private var myRectangleView: ResizableRectangleView? = null
-    private val displayMetrics = DisplayMetrics()
 
     private var heightPx: Int = 0
     private var widthPx: Int = 0
@@ -99,16 +99,18 @@ class Assistant(
                         val srcRect = Rect(it.rectLeft, it.rectTop, it.rectRight, it.rectBottom)
                         val destRect = Rect(0, 0, it.rectLeft + it.rectRight, it.rectTop + it.rectBottom)
                         canvas.drawBitmap(screenshot, srcRect, destRect, Paint())
-                        val view = ImageView(context)
+                        val view = ImageView(context).apply {
+                            setImageBitmap(croppedBtm)
+                            scaleType = ImageView.ScaleType.FIT_XY
+                        }
                         val params = FrameLayout.LayoutParams(
-                            it.left + it.right,
-                            it.top + it.bottom,
+                            550,
+                            350,
                             Gravity.CENTER
                         )
-                        view.setImageBitmap(croppedBtm)
                         mainFrame.addView(view, params)
                         removeRectangle()
-
+                        croppedBtm.detectObjects(context)
 
                 }
             }
@@ -145,12 +147,16 @@ class Assistant(
 
     private fun onIconClicked() {
         changeIsActive()
-        takeScreenshot()
-        initDrawLine()
+        if (isActive) {
+            takeScreenshot()
+            initDrawLine()
+
+        }
         refreshAssistantView()
         updateWindowManager()
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private fun initDrawLine() {
         val layoutParams = FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
@@ -207,7 +213,9 @@ class Assistant(
         mainFrame.visibility = View.VISIBLE
         updateWindowManager()
 //        screenshot = bmp
-        screenshot = newBitmap
+        screenshot = newBitmap.also {
+            it.detectObjects(context)
+        }
     }
 
     private fun detectImage(bitmap: Bitmap) {
@@ -342,6 +350,23 @@ class Assistant(
         myRectangleView?.let{
             mainFrame.removeView(it)
         }
+    }
+
+    private fun Bitmap.detectObjects(context: Context) {
+        val testModel = TfliteTestModel.newInstance(context)
+        val tfImage = TensorImage.fromBitmap(this)
+        val outputs = testModel.process(tfImage)
+        val locations = outputs.locationsAsTensorBuffer
+        val classes = outputs.classesAsTensorBuffer
+        val scores = outputs.scoresAsTensorBuffer
+        val numberOfDetections = outputs.numberOfDetectionsAsTensorBuffer
+
+        Log.d(TAG, "detectObjects: locations = ${locations.dataType}")
+        Log.d(TAG, "detectObjects: classes = ${classes.buffer}")
+        Log.d(TAG, "detectObjects: scores = ${scores.buffer}")
+        Log.d(TAG, "detectObjects: numberOfDetectedObjects = ${numberOfDetections.buffer}")
+
+        testModel.close()
     }
 
 }
