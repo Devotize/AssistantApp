@@ -36,6 +36,7 @@ class DrawLineView(context: Context): View(context) {
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
 
+        canvas?.drawRect(0f,0f,width.toFloat(),height.toFloat(), paint)
         canvas?.drawPath(path, paint)
 
 //        Log.d(TAG, "onDraw: X's: $touchedCoordinatesX, \n Y's: $touchedCoordinatesY")

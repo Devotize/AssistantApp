@@ -78,13 +78,46 @@ class Assistant(
             }
         }
     private val doneButton = assistantLayoutView.findViewById<ImageButton>(R.id.done_button)
-    private val cancelButton = assistantLayoutView.findViewById<ImageButton>(R.id.cancel_button).apply{
-        setOnClickListener {
-            removeEverythingButAssistant()
+    private val cancelButton =
+        assistantLayoutView.findViewById<ImageButton>(R.id.cancel_button).apply {
+            setOnClickListener {
+                removeEverythingButAssistant()
+                hideExtraButtons()
+            }
         }
-    }
     private val cropButton = assistantLayoutView.findViewById<ImageButton>(R.id.crop_button).apply {
         setOnClickListener {
+            screenshot?.let { shot ->
+                Log.d(TAG, "Screenshot clicked: screenshot is not null")
+//                    val fileName = "bitmap.png"
+//                    val stream = context.openFileOutput(fileName, Context.MODE_PRIVATE)
+//                    screenshot.compress(Bitmap.CompressFormat.PNG, 100, stream)
+//                    stream.close()
+//
+//                    val intent = Intent(context, CropActivity::class.java)
+//                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+//                    intent.putExtra("screenshot", fileName)
+//                    context.startActivity(intent)
+//                    close()
+
+                resizableRectangleView?.let { rectangleView ->
+                    val croppedBtm = rectangleView.cropBitmap(shot)
+                    screenshot = croppedBtm
+                    screenshot?.let{
+                        screenshotImageView.setImageBitmap(it)
+                        screenshotImageView.maxHeight = it.height
+                        screenshotImageView.maxWidth = it.width
+                    }
+                    removeRectangle()
+//                    screenshot.detectObjects(context)
+                }
+            }
+        }
+    }
+    private val drawButton = assistantLayoutView.findViewById<ImageButton>(R.id.draw_button).apply {
+        setOnClickListener {
+            removeRectangle()
+            removeDrawLine()
             addDrawLine()
         }
     }
@@ -93,49 +126,37 @@ class Assistant(
     private val screenshotButton =
         assistantLayoutView.findViewById<ImageButton>(R.id.screenshot_button).apply {
             setOnClickListener {
-                    showExtraButtons()
-                    removeEverythingButAssistant()
-                    takeScreenshot()
-                    screenshot?.let{
-                        addScreenshotViewToWindowManager(it)
-                    }
-                    recycleAssistantView()
-
-//                    screenshot?.let { screenshot ->
-//                        Log.d(TAG, "Screenshot clicked: screenshot is not null")
-////                    val fileName = "bitmap.png"
-////                    val stream = context.openFileOutput(fileName, Context.MODE_PRIVATE)
-////                    screenshot.compress(Bitmap.CompressFormat.PNG, 100, stream)
-////                    stream.close()
-////
-////                    val intent = Intent(context, CropActivity::class.java)
-////                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-////                    intent.putExtra("screenshot", fileName)
-////                    context.startActivity(intent)
-////                    close()
-//
-//                        resizableRectangleView?.let{
-//                            val croppedBtm = it.cropBitmap(screenshot)
-//                            val view = ImageView(context).apply {
-//                                setImageBitmap(croppedBtm)
-//                                scaleType = ImageView.ScaleType.FIT_XY
-//                            }
-//                            val params = FrameLayout.LayoutParams(
-//                                550,
-//                                350,
-//                                Gravity.CENTER
-//                            )
-//                            removeScreenshotViewFromWindowManager()
-//                            windowManager.addView(view, params)
-//                            removeRectangle()
-//                            croppedBtm.detectObjects(context)
-//                        }
-//                    }
-
+                showExtraButtons()
+                removeEverythingButAssistant()
+                takeScreenshot()
+                screenshot?.let {
+                    addScreenshotViewToWindowManager(it)
+                }
+                recycleAssistantView()
 
                 Log.d(TAG, "onClick: $screenshot")
             }
         }
+
+    private val extraParams = WindowManager.LayoutParams(
+        ViewGroup.LayoutParams.WRAP_CONTENT,
+        ViewGroup.LayoutParams.WRAP_CONTENT,
+        0,
+        0,
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+        } else {
+            WindowManager.LayoutParams.TYPE_PHONE
+        },
+        WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+        PixelFormat.TRANSLUCENT
+    ).apply {
+        gravity = Gravity.CENTER
+    }
+
 
     private val windowParams = WindowManager.LayoutParams(
         ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -157,15 +178,16 @@ class Assistant(
     }
 
     private fun showExtraButtons() {
-        cropButton.visibility = View.VISIBLE
+        drawButton.visibility = View.VISIBLE
         doneButton.visibility = View.VISIBLE
         cancelButton.visibility = View.VISIBLE
     }
 
     private fun hideExtraButtons() {
-        cropButton.visibility = View.GONE
+        drawButton.visibility = View.GONE
         doneButton.visibility = View.GONE
         cancelButton.visibility = View.GONE
+        cropButton.visibility = View.GONE
     }
 
     private fun createVirtualDisplay(ir: ImageReader) {
@@ -194,20 +216,22 @@ class Assistant(
 
     @SuppressLint("ClickableViewAccessibility")
     private fun addDrawLine() {
-            drawLineView.setOnTouchListener { v, event ->
-                if (event.action == MotionEvent.ACTION_UP) {
+        drawLineView.setOnTouchListener { v, event ->
+            if (event.action == MotionEvent.ACTION_UP) {
 //                    Log.d(TAG, "initDrawLine: drawing rectangle listX = ${view.touchedCoordinatesX}, \n listY = ${view.touchedCoordinatesY}")
-                    addCropFrameToWindowManager(drawLineView.touchedCoordinatesX, drawLineView.touchedCoordinatesY)
-                    removeDrawLine()
-                }
-                false
+                addCropFrameToWindowManager(
+                    drawLineView.touchedCoordinatesX,
+                    drawLineView.touchedCoordinatesY
+                )
+                removeDrawLine()
             }
-            windowManager.addView(drawLineView, windowParams)
-
+            false
+        }
+        windowManager.addView(drawLineView, extraParams)
     }
 
     private fun removeDrawLine() {
-        try{
+        try {
             windowManager.removeView(drawLineView)
         } catch (e: Exception) {
             //ignore
@@ -233,16 +257,7 @@ class Assistant(
 
     private fun addScreenshotViewToWindowManager(bitmap: Bitmap) {
         screenshotImageView.setImageBitmap(bitmap)
-        val params = WindowManager.LayoutParams(
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-            } else {
-                WindowManager.LayoutParams.TYPE_PHONE
-            },
-        )
-        windowManager.addView(screenshotImageView, windowParams)
+        windowManager.addView(screenshotImageView, extraParams)
     }
 
     private fun removeScreenshotViewFromWindowManager() {
@@ -384,32 +399,10 @@ class Assistant(
 
     private fun addCropFrameToWindowManager(xList: List<Float>, yList: List<Float>) {
         resizableRectangleView = ResizableRectangleView(context, xList, yList).also {
-            val layoutParams = WindowManager.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-                } else {
-                    WindowManager.LayoutParams.TYPE_PHONE
-                },
-            )
-            windowManager.addView(it, windowParams)
+            cropButton.visibility = View.VISIBLE
+            windowManager.addView(it, extraParams)
             recycleAssistantView()
         }
-    }
-
-    private fun addNoObjectsFoundTv() {
-        val params = FrameLayout.LayoutParams(
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-            Gravity.CENTER
-        )
-        val tv = TextView(context).apply {
-            textSize = 30f
-            text = "No Objects Found"
-            setTextColor(ContextCompat.getColor(context, R.color.orange_700))
-        }
-//        mainFrame.addView(tv, params)
     }
 
     private fun removeRectangle() {
