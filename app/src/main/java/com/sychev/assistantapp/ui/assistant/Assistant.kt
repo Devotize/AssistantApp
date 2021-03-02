@@ -15,12 +15,18 @@ import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.objects.DetectedObject
 import com.sychev.assistantapp.R
-import com.sychev.assistantapp.ml.TfliteTestModel
+import com.sychev.assistantapp.ml.ClothesTestModel
 import com.sychev.assistantapp.ui.TAG
-import com.sychev.assistantapp.ui.components.DrawLineView
-import com.sychev.assistantapp.ui.components.ResizableRectangleView
+import com.sychev.assistantapp.ui.components.FrameDrawComponent
+import com.sychev.assistantapp.ui.components.ResizableBoundingBox
+import com.sychev.assistantapp.ui.view.FrameDrawView
+import com.sychev.assistantapp.ui.view.ResizableRectangleView
 import com.sychev.assistantapp.utils.MyObjectDetector
+import org.tensorflow.lite.DataType
+import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
+import org.tensorflow.lite.support.image.ops.ResizeOp
+import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
 import java.lang.Exception
 
 
@@ -33,12 +39,10 @@ class Assistant(
     private val layoutInflater =
         context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
     private val assistantLayoutView = layoutInflater.inflate(R.layout.assistant_layout, null)
-    private val screenshotImageView = ImageView(context)
-    private val drawLineView = DrawLineView(context)
-
-    private val objectDetector = MyObjectDetector().instance
+    private val screenshotImageView = ImageView(context).also {
+        it.scaleType = ImageView.ScaleType.CENTER_CROP
+    }
     private var screenshot: Bitmap? = null
-    private var resizableRectangleView: ResizableRectangleView? = null
 
     private var heightPx: Int = 0
     private var widthPx: Int = 0
@@ -65,6 +69,9 @@ class Assistant(
             }
         }
 
+    private val frameDrawComponent = FrameDrawComponent(context, windowManager, this)
+
+
     @SuppressLint("WrongConstant")
     private val imageReader = ImageReader.newInstance(widthPx, heightPx, PixelFormat.RGBA_8888, 1)
         .also {
@@ -81,44 +88,36 @@ class Assistant(
     private val cancelButton =
         assistantLayoutView.findViewById<ImageButton>(R.id.cancel_button).apply {
             setOnClickListener {
-                removeEverythingButAssistant()
                 hideExtraButtons()
             }
         }
     private val cropButton = assistantLayoutView.findViewById<ImageButton>(R.id.crop_button).apply {
         setOnClickListener {
             screenshot?.let { shot ->
-                Log.d(TAG, "Screenshot clicked: screenshot is not null")
-//                    val fileName = "bitmap.png"
-//                    val stream = context.openFileOutput(fileName, Context.MODE_PRIVATE)
-//                    screenshot.compress(Bitmap.CompressFormat.PNG, 100, stream)
-//                    stream.close()
-//
-//                    val intent = Intent(context, CropActivity::class.java)
-//                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-//                    intent.putExtra("screenshot", fileName)
-//                    context.startActivity(intent)
-//                    close()
-
-                resizableRectangleView?.let { rectangleView ->
-                    val croppedBtm = rectangleView.cropBitmap(shot)
-                    screenshot = croppedBtm
-                    screenshot?.let{
-                        screenshotImageView.setImageBitmap(it)
-                        screenshotImageView.maxHeight = it.height
-                        screenshotImageView.maxWidth = it.width
-                    }
-                    removeRectangle()
-//                    screenshot.detectObjects(context)
+                val boundingBox = frameDrawComponent.boundingBox
+                screenshot = cropBitmap(
+                    shot,
+                    boundingBox.left,
+                    boundingBox.top,
+                    boundingBox.right,
+                    boundingBox.bottom
+                )
+                Log.d(TAG, "bounding box is shown croppedBitmap = $screenshot")
+                screenshot?.let {
+                    screenshotImageView.setImageBitmap(it)
+                    screenshotImageView.setBackgroundColor(Color.BLACK)
                 }
+                boundingBox.hide()
+                it.visibility = View.GONE
+                recycleAssistantView()
             }
         }
     }
     private val drawButton = assistantLayoutView.findViewById<ImageButton>(R.id.draw_button).apply {
         setOnClickListener {
-            removeRectangle()
-            removeDrawLine()
-            addDrawLine()
+            frameDrawComponent.show()
+            cropButton.visibility = View.VISIBLE
+            recycleAssistantView()
         }
     }
 
@@ -127,7 +126,6 @@ class Assistant(
         assistantLayoutView.findViewById<ImageButton>(R.id.screenshot_button).apply {
             setOnClickListener {
                 showExtraButtons()
-                removeEverythingButAssistant()
                 takeScreenshot()
                 screenshot?.let {
                     addScreenshotViewToWindowManager(it)
@@ -214,30 +212,6 @@ class Assistant(
         refreshAssistantView()
     }
 
-    @SuppressLint("ClickableViewAccessibility")
-    private fun addDrawLine() {
-        drawLineView.setOnTouchListener { v, event ->
-            if (event.action == MotionEvent.ACTION_UP) {
-//                    Log.d(TAG, "initDrawLine: drawing rectangle listX = ${view.touchedCoordinatesX}, \n listY = ${view.touchedCoordinatesY}")
-                addCropFrameToWindowManager(
-                    drawLineView.touchedCoordinatesX,
-                    drawLineView.touchedCoordinatesY
-                )
-                removeDrawLine()
-            }
-            false
-        }
-        windowManager.addView(drawLineView, extraParams)
-    }
-
-    private fun removeDrawLine() {
-        try {
-            windowManager.removeView(drawLineView)
-        } catch (e: Exception) {
-            //ignore
-        }
-    }
-
     private fun refreshAssistantView() {
         if (isActive) {
             iconButton.background = ContextCompat.getDrawable(context, R.drawable.icon_1)
@@ -246,13 +220,7 @@ class Assistant(
             iconButton.background = ContextCompat.getDrawable(context, R.drawable.icon_2)
             screenshotButton.visibility = View.GONE
             hideExtraButtons()
-            removeEverythingButAssistant()
         }
-    }
-
-    private fun removeEverythingButAssistant() {
-        removeScreenshotViewFromWindowManager()
-        removeRectangle()
     }
 
     private fun addScreenshotViewToWindowManager(bitmap: Bitmap) {
@@ -286,43 +254,11 @@ class Assistant(
         val newBitmap = Bitmap.createBitmap(bmp, 0, 0, image.width, image.height)
         image.close()
         assistantLayoutView.visibility = View.VISIBLE
-//        screenshot = bmp
         screenshot = newBitmap.also {
-            it.detectObjects(context)
+            detectClothes(it)
         }
         Log.d(TAG, "takeScreenshot: screenshot: $screenshot")
     }
-
-    private fun detectImage(bitmap: Bitmap) {
-//        mainFrame.background =
-//            ColorDrawable(ContextCompat.getColor(context, R.color.half_transparent))
-//        showProgressBar()
-        val inputImage = InputImage.fromBitmap(bitmap, 0)
-        objectDetector.process(inputImage)
-            .addOnSuccessListener {
-                Log.d(TAG, "detectImage: onSuccess")
-                if (it.isNotEmpty()) {
-                    it.forEach {
-                        addCircleForDetectedObject(it)
-                    }
-                } else {
-//                    addNoObjectsFoundTv()
-                }
-//                Log.d(TAG, "detectImage: centerY = ${it[0].boundingBox.centerY()}")
-
-//                hideProgressBar()
-            }
-            .addOnFailureListener {
-//                hideProgressBar()
-                Log.d(TAG, "detectImage: onFailure $it")
-            }
-    }
-
-    private fun setWindowParams(width: Int, height: Int) {
-        windowParams.width = width
-        windowParams.height = height
-    }
-
 
     private fun changeIsActive() {
         isActive = !isActive
@@ -340,10 +276,9 @@ class Assistant(
         if (assistantLayoutView.parent != null) {
             windowManager.removeView(assistantLayoutView)
         }
-        removeEverythingButAssistant()
     }
 
-    private fun recycleAssistantView() {
+    fun recycleAssistantView() {
         if (assistantLayoutView.parent != null) {
             windowManager.removeView(assistantLayoutView)
             windowManager.addView(assistantLayoutView, windowParams)
@@ -389,33 +324,10 @@ class Assistant(
         view.setOnClickListener {
             tvVisible = !tvVisible
             tv.visibility = if (tvVisible) View.VISIBLE else View.INVISIBLE
-//            showObjectFrame(detectedObject)
-        }
-
-//        mainFrame.background = ColorDrawable(Color.TRANSPARENT)
-//        mainFrame.addView(view, params)
-//        mainFrame.addView(tv, tvParams)
-    }
-
-    private fun addCropFrameToWindowManager(xList: List<Float>, yList: List<Float>) {
-        resizableRectangleView = ResizableRectangleView(context, xList, yList).also {
-            cropButton.visibility = View.VISIBLE
-            windowManager.addView(it, extraParams)
-            recycleAssistantView()
         }
     }
 
-    private fun removeRectangle() {
-        resizableRectangleView?.let {
-            try {
-                windowManager.removeView(it)
-            } catch (e: Exception) {
-                //ignote
-            }
-        }
-    }
-
-    private fun ResizableRectangleView.cropBitmap(bitmap: Bitmap): Bitmap {
+    private fun cropBitmap(bitmap: Bitmap, left: Int, top: Int, right: Int, bottom: Int): Bitmap {
         val croppedBtm = Bitmap.createBitmap(
             bitmap.width,
             bitmap.height,
@@ -424,28 +336,35 @@ class Assistant(
         val canvas = Canvas(croppedBtm)
         val paint = Paint()
         paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
-        val srcRect = Rect(this.rectLeft, this.rectTop, this.rectRight, this.rectBottom)
+        val srcRect = Rect(left, top, right, bottom)
         val destRect =
-            Rect(0, 0, this.rectLeft + this.rectRight, this.rectTop + this.rectBottom)
+            Rect(left, top, right, bottom)
         canvas.drawBitmap(bitmap, srcRect, destRect, Paint())
         return croppedBtm
     }
 
-    private fun Bitmap.detectObjects(context: Context) {
-        val testModel = TfliteTestModel.newInstance(context)
-        val tfImage = TensorImage.fromBitmap(this)
-        val outputs = testModel.process(tfImage)
-        val locations = outputs.locationsAsTensorBuffer
-        val classes = outputs.classesAsTensorBuffer
-        val scores = outputs.scoresAsTensorBuffer
-        val numberOfDetections = outputs.numberOfDetectionsAsTensorBuffer
+    private fun detectClothes(bitmap: Bitmap) {
+        val model = ClothesTestModel.newInstance(context)
+        val imageProcessor = ImageProcessor.Builder()
+            .add(ResizeOp(416, 416, ResizeOp.ResizeMethod.BILINEAR))
+            .build()
+        val tImage = TensorImage(DataType.FLOAT32)
+        tImage.load(bitmap)
+        val resizedTImage = imageProcessor.process(tImage)
+        val inputBuffer = TensorBuffer.createFixedSize(intArrayOf(1, 416, 416, 3), DataType.FLOAT32)
+        inputBuffer.loadBuffer(resizedTImage.buffer)
+        Log.d(TAG, "detectClothes: inputBuffer: $inputBuffer")
+        val output = model.process(inputBuffer)
+        Log.d(TAG, "detectClothes: output: $output")
+        val feature0 = output.outputFeature0AsTensorBuffer
+        val feature1 = output.outputFeature1AsTensorBuffer
+        Log.d(TAG, "detectClothes: feature0: ${feature0.floatArray}")
+        Log.d(TAG, "detectClothes: feature1: ${feature1.floatArray}")
 
-        Log.d(TAG, "detectObjects: locations = ${locations.dataType}")
-        Log.d(TAG, "detectObjects: classes = ${classes.buffer}")
-        Log.d(TAG, "detectObjects: scores = ${scores.buffer}")
-        Log.d(TAG, "detectObjects: numberOfDetectedObjects = ${numberOfDetections.buffer}")
 
-        testModel.close()
+        model.close()
+
+
     }
 
 }
