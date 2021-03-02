@@ -89,6 +89,8 @@ class Assistant(
         assistantLayoutView.findViewById<ImageButton>(R.id.cancel_button).apply {
             setOnClickListener {
                 hideExtraButtons()
+                hideComponents()
+                hideScreenshotView()
             }
         }
     private val cropButton = assistantLayoutView.findViewById<ImageButton>(R.id.crop_button).apply {
@@ -220,20 +222,14 @@ class Assistant(
             iconButton.background = ContextCompat.getDrawable(context, R.drawable.icon_2)
             screenshotButton.visibility = View.GONE
             hideExtraButtons()
+            hideComponents()
+            hideScreenshotView()
         }
     }
 
     private fun addScreenshotViewToWindowManager(bitmap: Bitmap) {
         screenshotImageView.setImageBitmap(bitmap)
         windowManager.addView(screenshotImageView, extraParams)
-    }
-
-    private fun removeScreenshotViewFromWindowManager() {
-        try {
-            windowManager.removeView(screenshotImageView)
-        } catch (e: Exception) {
-            //ignore
-        }
     }
 
     private fun takeScreenshot() {
@@ -266,6 +262,17 @@ class Assistant(
 
     init {
         initWindow()
+    }
+
+    fun hideComponents() {
+        frameDrawComponent.hide()
+        frameDrawComponent.boundingBox.hide()
+    }
+
+    fun hideScreenshotView() {
+        if (screenshotImageView.parent != null){
+            windowManager.removeView(screenshotImageView)
+        }
     }
 
     fun open() {
