@@ -18,7 +18,9 @@ import com.sychev.assistantapp.R
 import com.sychev.assistantapp.ml.ClothesTestModel
 import com.sychev.assistantapp.ui.TAG
 import com.sychev.assistantapp.ui.components.FrameDrawComponent
+import com.sychev.assistantapp.ui.components.OverlayViewBack
 import com.sychev.assistantapp.ui.components.ResizableBoundingBox
+import com.sychev.assistantapp.ui.utils.State
 import com.sychev.assistantapp.ui.view.FrameDrawView
 import com.sychev.assistantapp.ui.view.ResizableRectangleView
 import com.sychev.assistantapp.utils.MyObjectDetector
@@ -47,6 +49,16 @@ class Assistant(
     private var heightPx: Int = 0
     private var widthPx: Int = 0
 
+    // Coordinates before the start of the movement
+    private var prevMoveX = 0
+    private var prevMoveY = 0
+    // Coordinates at the start of the movement
+    private var startMoveX = 0.0
+    private var startMoveY = 0.0
+
+    private val isMoved: Boolean
+        get() = prevMoveX != windowParams.x || prevMoveY != windowParams.y
+
     private val windowManager =
         (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).also { wm ->
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -68,6 +80,10 @@ class Assistant(
                 heightPx = size.y
             }
         }
+
+    private val viewBack = OverlayViewBack(context, windowManager).also {
+        it.show()
+    }
 
     private val frameDrawComponent = FrameDrawComponent(context, windowManager, this)
 
@@ -161,8 +177,6 @@ class Assistant(
     private val windowParams = WindowManager.LayoutParams(
         ViewGroup.LayoutParams.WRAP_CONTENT,
         ViewGroup.LayoutParams.WRAP_CONTENT,
-        0,
-        0,
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
         } else {
@@ -174,7 +188,7 @@ class Assistant(
                 WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
         PixelFormat.TRANSLUCENT
     ).apply {
-        gravity = Gravity.TOP or Gravity.END
+        gravity = Gravity.CENTER
     }
 
     private fun showExtraButtons() {
@@ -207,6 +221,7 @@ class Assistant(
 
     private fun initWindow() {
         refreshAssistantView()
+        setOnTouchListener()
     }
 
     private fun onIconClicked() {
@@ -348,6 +363,57 @@ class Assistant(
             Rect(left, top, right, bottom)
         canvas.drawBitmap(bitmap, srcRect, destRect, Paint())
         return croppedBtm
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private fun setOnTouchListener() {
+        iconButton.setOnTouchListener { _, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    prevMoveX = windowParams.x
+                    prevMoveY = windowParams.y
+                    windowParams.gravity = Gravity.CENTER
+                    startMoveX = event.rawX.toDouble()
+                    startMoveY = event.rawY.toDouble()
+
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    if (viewBack.state == State.CLOSE) {
+                        val deltaX = event.rawX - startMoveX
+                        val deltaY = event.rawY - startMoveY
+                        moveAt(prevMoveX + deltaX.toInt(), prevMoveY + deltaY.toInt())
+                    }
+                }
+                MotionEvent.ACTION_UP -> {
+                    if (!isMoved) {
+                        if (viewBack.state == State.CLOSE) {
+                            viewBack.open()
+                        } else if (viewBack.state == State.OPEN) {
+                            viewBack.close()
+                        }
+                    } else {
+                        viewBack.moveAt(windowParams.x, windowParams.y)
+                    }
+                }
+            }
+            return@setOnTouchListener true
+        }
+    }
+
+    private fun moveAt(x: Int = 0, y: Int = 0) {
+        //Log.e("OverlayViewTop", "x : $x , y : $y")
+        if (!inScreen(x, y)) return
+        windowParams.x = x
+        windowParams.y = y
+        windowManager.updateViewLayout(assistantLayoutView, windowParams)
+    }
+
+    private fun inScreen(x: Int, y: Int): Boolean {
+        return true/*x - 35.px >= 0 &&
+                x + 35.px <= params.width &&
+                y - 35.px >= 0 &&
+                y + 35.px <= params.height*/
+
     }
 
     private fun detectClothes(bitmap: Bitmap) {

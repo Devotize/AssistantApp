@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="150dp"
+    android:layout_height="150dp">
+    <androidx.constraintlayout.motion.widget.MotionLayout
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/motion_layout"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        app:layoutDescription="@xml/motion_layout_scene">
+
+        <ImageView
+            android:id="@+id/back_circle"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@drawable/background_circle"
+            android:visibility="invisible"/>
+
+        <ImageButton
+            android:id="@+id/data"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@drawable/ic_data" />
+
+        <ImageButton
+            android:id="@+id/exit"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@drawable/ic_exit" />
+
+        <ImageButton
+            android:id="@+id/screen"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:background="@drawable/ic_screen" />
+
+        <ImageButton
+            android:id="@+id/stop"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:background="@drawable/ic_stop" />
+
+    </androidx.constraintlayout.motion.widget.MotionLayout>
+</RelativeLayout>
