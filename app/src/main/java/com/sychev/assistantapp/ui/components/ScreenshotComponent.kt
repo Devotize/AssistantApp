@@ -1,23 +1,24 @@
 package com.sychev.assistantapp.ui.components
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.PixelFormat
 import android.os.Build
 import android.view.Gravity
 import android.view.ViewGroup
 import android.view.WindowManager
-import com.sychev.assistantapp.ui.view.ResizableRectangleView
+import android.widget.FrameLayout
+import android.widget.ImageView
 
-class ResizableBoundingBox(
+class ScreenshotComponent(
     private val context: Context,
-    private val windowManager: WindowManager,
+    private val windowManager: WindowManager
 ) {
-    private val rootView = ResizableRectangleView(context)
+    val rootView = FrameLayout(context)
+    private val imageView = ImageView(context)
     private val layoutParams = WindowManager.LayoutParams(
         ViewGroup.LayoutParams.WRAP_CONTENT,
         ViewGroup.LayoutParams.WRAP_CONTENT,
-        0,
-        0,
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
         } else {
@@ -32,35 +33,29 @@ class ResizableBoundingBox(
     ).apply {
         gravity = Gravity.CENTER
     }
-    var left = 0
-    var top = 0
-    var right = 0
-    var bottom = 0
+    private var screenshot: Bitmap? = null
 
+    fun setScreenshot(bitmap: Bitmap) {
+        screenshot = bitmap
+        imageView.setImageBitmap(screenshot)
+    }
+    fun getScreenshot() = screenshot
 
-    fun show(xCoordinates: List<Float>, yCoordinates: List<Float>) {
+    fun show() {
         if (rootView.parent == null) {
-            rootView.setCoordinates(xCoordinates = xCoordinates, yCoordinates = yCoordinates)
-            setBounds(rootView.rectLeft, rootView.rectTop, rootView.rectRight, rootView.rectBottom)
             windowManager.addView(rootView, layoutParams)
+            rootView.addView(imageView)
         }
     }
 
     fun hide() {
         if (rootView.parent != null) {
             windowManager.removeView(rootView)
+            rootView.removeAllViews()
         }
     }
 
-    private fun setBounds(left: Int, top: Int, right: Int, bottom: Int) {
-        this.left = left
-        this.top = top
-        this.bottom = bottom
-        this.right = right
-    }
-
 }
-
 
 
 

@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.*
 import android.hardware.display.DisplayManager
+import android.media.FaceDetector
 import android.media.Image.Plane
 import android.media.ImageReader
 import android.media.projection.MediaProjection
@@ -13,23 +14,21 @@ import android.view.*
 import android.widget.*
 import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.objects.DetectedObject
 import com.sychev.assistantapp.R
 import com.sychev.assistantapp.ml.ClothesTestModel
 import com.sychev.assistantapp.ui.TAG
 import com.sychev.assistantapp.ui.components.FrameDrawComponent
 import com.sychev.assistantapp.ui.components.OverlayViewBack
-import com.sychev.assistantapp.ui.components.ResizableBoundingBox
+import com.sychev.assistantapp.ui.components.ProgressBarComponent
+import com.sychev.assistantapp.ui.components.ScreenshotComponent
 import com.sychev.assistantapp.ui.utils.State
-import com.sychev.assistantapp.ui.view.FrameDrawView
-import com.sychev.assistantapp.ui.view.ResizableRectangleView
-import com.sychev.assistantapp.utils.MyObjectDetector
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
-import java.lang.Exception
 
 
 class Assistant(
@@ -37,14 +36,10 @@ class Assistant(
     private val mediaProjection: MediaProjection
 ) {
 
-    private var isActive = false
     private val layoutInflater =
         context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-    private val assistantLayoutView = layoutInflater.inflate(R.layout.assistant_layout, null)
-    private val screenshotImageView = ImageView(context).also {
-        it.scaleType = ImageView.ScaleType.CENTER_CROP
-    }
-    private var screenshot: Bitmap? = null
+    private val rootView = layoutInflater.inflate(R.layout.assistant_layout, null)
+    private val faceDetector = FaceDetection.getClient()
 
     private var heightPx: Int = 0
     private var widthPx: Int = 0
@@ -81,12 +76,23 @@ class Assistant(
             }
         }
 
+    private val frameDrawComponent = FrameDrawComponent(context, windowManager, this)
+    private val screenshotComponent = ScreenshotComponent(context, windowManager)
+    private val progressBar = ProgressBarComponent(context, windowManager)
+
+
     private val viewBack = OverlayViewBack(context, windowManager).also {
         it.show()
+        it.setonClickListenerCamera {
+            screenshotComponent.setScreenshot(takeScreenshot())
+            screenshotComponent.show()
+            recycleAssistantView()
+            screenshotComponent.getScreenshot()?.let { screenshot -> detectFaces(screenshot) }
+        }
+        it.setonClickListenerExit {
+            hideComponents()
+        }
     }
-
-    private val frameDrawComponent = FrameDrawComponent(context, windowManager, this)
-
 
     @SuppressLint("WrongConstant")
     private val imageReader = ImageReader.newInstance(widthPx, heightPx, PixelFormat.RGBA_8888, 1)
@@ -95,84 +101,7 @@ class Assistant(
         }
 
     private val iconButton =
-        assistantLayoutView.findViewById<ImageButton>(R.id.assistant_icon).apply {
-            setOnClickListener {
-                onIconClicked()
-            }
-        }
-    private val doneButton = assistantLayoutView.findViewById<ImageButton>(R.id.done_button)
-    private val cancelButton =
-        assistantLayoutView.findViewById<ImageButton>(R.id.cancel_button).apply {
-            setOnClickListener {
-                hideExtraButtons()
-                hideComponents()
-                hideScreenshotView()
-            }
-        }
-    private val cropButton = assistantLayoutView.findViewById<ImageButton>(R.id.crop_button).apply {
-        setOnClickListener {
-            screenshot?.let { shot ->
-                val boundingBox = frameDrawComponent.boundingBox
-                screenshot = cropBitmap(
-                    shot,
-                    boundingBox.left,
-                    boundingBox.top,
-                    boundingBox.right,
-                    boundingBox.bottom
-                )
-                Log.d(TAG, "bounding box is shown croppedBitmap = $screenshot")
-                screenshot?.let {
-                    screenshotImageView.setImageBitmap(it)
-                    screenshotImageView.setBackgroundColor(Color.BLACK)
-                }
-                boundingBox.hide()
-                it.visibility = View.GONE
-                recycleAssistantView()
-            }
-        }
-    }
-    private val drawButton = assistantLayoutView.findViewById<ImageButton>(R.id.draw_button).apply {
-        setOnClickListener {
-            frameDrawComponent.show()
-            cropButton.visibility = View.VISIBLE
-            recycleAssistantView()
-        }
-    }
-
-
-    private val screenshotButton =
-        assistantLayoutView.findViewById<ImageButton>(R.id.screenshot_button).apply {
-            setOnClickListener {
-                showExtraButtons()
-                takeScreenshot()
-                screenshot?.let {
-                    addScreenshotViewToWindowManager(it)
-                }
-                recycleAssistantView()
-
-                Log.d(TAG, "onClick: $screenshot")
-            }
-        }
-
-    private val extraParams = WindowManager.LayoutParams(
-        ViewGroup.LayoutParams.WRAP_CONTENT,
-        ViewGroup.LayoutParams.WRAP_CONTENT,
-        0,
-        0,
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-        } else {
-            WindowManager.LayoutParams.TYPE_PHONE
-        },
-        WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
-        PixelFormat.TRANSLUCENT
-    ).apply {
-        gravity = Gravity.CENTER
-    }
-
+        rootView.findViewById<ImageButton>(R.id.assistant_icon)
 
     private val windowParams = WindowManager.LayoutParams(
         ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -191,19 +120,6 @@ class Assistant(
         gravity = Gravity.CENTER
     }
 
-    private fun showExtraButtons() {
-        drawButton.visibility = View.VISIBLE
-        doneButton.visibility = View.VISIBLE
-        cancelButton.visibility = View.VISIBLE
-    }
-
-    private fun hideExtraButtons() {
-        drawButton.visibility = View.GONE
-        doneButton.visibility = View.GONE
-        cancelButton.visibility = View.GONE
-        cropButton.visibility = View.GONE
-    }
-
     private fun createVirtualDisplay(ir: ImageReader) {
         val flags = DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY or
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
@@ -219,37 +135,13 @@ class Assistant(
         )
     }
 
-    private fun initWindow() {
-        refreshAssistantView()
+    init {
         setOnTouchListener()
     }
 
-    private fun onIconClicked() {
-        changeIsActive()
-        refreshAssistantView()
-    }
-
-    private fun refreshAssistantView() {
-        if (isActive) {
-            iconButton.background = ContextCompat.getDrawable(context, R.drawable.icon_1)
-            screenshotButton.visibility = View.VISIBLE
-        } else {
-            iconButton.background = ContextCompat.getDrawable(context, R.drawable.icon_2)
-            screenshotButton.visibility = View.GONE
-            hideExtraButtons()
-            hideComponents()
-            hideScreenshotView()
-        }
-    }
-
-    private fun addScreenshotViewToWindowManager(bitmap: Bitmap) {
-        screenshotImageView.setImageBitmap(bitmap)
-        windowManager.addView(screenshotImageView, extraParams)
-    }
-
-    private fun takeScreenshot() {
-        assistantLayoutView.visibility = View.GONE
-        Log.d(TAG, "takeScreenshot: assistantParent: ${assistantLayoutView.parent}")
+    private fun takeScreenshot(): Bitmap {
+        rootView.visibility = View.GONE
+        Log.d(TAG, "takeScreenshot: assistantParent: ${rootView.parent}")
         val image = imageReader.acquireNextImage()
         val planes: Array<Plane> = image.planes
         val buffer = planes[0].buffer
@@ -264,89 +156,53 @@ class Assistant(
         bmp.copyPixelsFromBuffer(buffer)
         val newBitmap = Bitmap.createBitmap(bmp, 0, 0, image.width, image.height)
         image.close()
-        assistantLayoutView.visibility = View.VISIBLE
-        screenshot = newBitmap.also {
-            detectClothes(it)
-        }
-        Log.d(TAG, "takeScreenshot: screenshot: $screenshot")
+        rootView.visibility = View.VISIBLE
+        return newBitmap
     }
 
-    private fun changeIsActive() {
-        isActive = !isActive
-    }
-
-    init {
-        initWindow()
-    }
-
-    fun hideComponents() {
+    private fun hideComponents() {
         frameDrawComponent.hide()
         frameDrawComponent.boundingBox.hide()
-    }
-
-    fun hideScreenshotView() {
-        if (screenshotImageView.parent != null){
-            windowManager.removeView(screenshotImageView)
-        }
+        screenshotComponent.hide()
     }
 
     fun open() {
-        windowManager.addView(assistantLayoutView, windowParams)
+        windowManager.addView(rootView, windowParams)
     }
 
     fun close() {
-        if (assistantLayoutView.parent != null) {
-            windowManager.removeView(assistantLayoutView)
+        if (rootView.parent != null) {
+            windowManager.removeView(rootView)
         }
     }
 
     fun recycleAssistantView() {
-        if (assistantLayoutView.parent != null) {
-            windowManager.removeView(assistantLayoutView)
-            windowManager.addView(assistantLayoutView, windowParams)
+        if (rootView.parent != null) {
+            viewBack.hide()
+            viewBack.show()
+            windowManager.removeView(rootView)
+            windowManager.addView(rootView, windowParams)
         }
     }
 
-    private fun addCircleForDetectedObject(detectedObject: DetectedObject) {
-        val x = detectedObject.boundingBox.exactCenterX().toInt()
-        val y = detectedObject.boundingBox.exactCenterY().toInt()
+    private fun addCircleForDetectedObject(boundingBox: Rect) {
+        val x = boundingBox.left
+        val y = boundingBox.top
+
         val params = FrameLayout.LayoutParams(
-            80,
-            80,
+            60,
+            60,
         )
         params.leftMargin = x
         params.topMargin = y
-        for (label in detectedObject.labels) {
-            Log.d(
-                TAG,
-                "addCircleForDetectedObject: trakingId = ${detectedObject.trackingId} labelText = ${label.text}"
-            )
-        }
 
-        var tvVisible = false
-        val tv = TextView(context).apply {
-            text = if (detectedObject.labels.isNotEmpty())
-                detectedObject.labels[0].text
-            else
-                "Object"
-            textSize = 26f
-            setTextColor(ContextCompat.getColor(context, R.color.orange_700))
-            visibility = View.INVISIBLE
-        }
-        val tvParams = FrameLayout.LayoutParams(
-            260,
-            ViewGroup.LayoutParams.WRAP_CONTENT
-        ).apply {
-            leftMargin = x
-            topMargin = y + 90
-        }
 
         val view = Button(context)
         view.background = ContextCompat.getDrawable(context, R.drawable.orange_circle_shape)
         view.setOnClickListener {
-            tvVisible = !tvVisible
-            tv.visibility = if (tvVisible) View.VISIBLE else View.INVISIBLE
+            Toast.makeText(context, "Clicked on FACE!", Toast.LENGTH_SHORT).show()
         }
+        screenshotComponent.rootView.addView(view, params)
     }
 
     private fun cropBitmap(bitmap: Bitmap, left: Int, top: Int, right: Int, bottom: Int): Bitmap {
@@ -370,6 +226,7 @@ class Assistant(
         iconButton.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
+                    Log.d(TAG, "setOnTouchListener: action down")
                     prevMoveX = windowParams.x
                     prevMoveY = windowParams.y
                     windowParams.gravity = Gravity.CENTER
@@ -385,6 +242,7 @@ class Assistant(
                     }
                 }
                 MotionEvent.ACTION_UP -> {
+                    Log.d(TAG, "setOnTouchListener: action up")
                     if (!isMoved) {
                         if (viewBack.state == State.CLOSE) {
                             viewBack.open()
@@ -401,19 +259,9 @@ class Assistant(
     }
 
     private fun moveAt(x: Int = 0, y: Int = 0) {
-        //Log.e("OverlayViewTop", "x : $x , y : $y")
-        if (!inScreen(x, y)) return
         windowParams.x = x
         windowParams.y = y
-        windowManager.updateViewLayout(assistantLayoutView, windowParams)
-    }
-
-    private fun inScreen(x: Int, y: Int): Boolean {
-        return true/*x - 35.px >= 0 &&
-                x + 35.px <= params.width &&
-                y - 35.px >= 0 &&
-                y + 35.px <= params.height*/
-
+        windowManager.updateViewLayout(rootView, windowParams)
     }
 
     private fun detectClothes(bitmap: Bitmap) {
@@ -436,8 +284,24 @@ class Assistant(
 
 
         model.close()
+    }
 
-
+    private fun detectFaces(bitmap: Bitmap) {
+        progressBar.show()
+        val inputImage = InputImage.fromBitmap(bitmap, 0)
+        val result = faceDetector.process(inputImage)
+            .addOnSuccessListener { faces ->
+                for (face in faces){
+                    val boundingBox = face.boundingBox
+                    Log.d(TAG, "detectFaces: BoundingBox: $boundingBox")
+                    addCircleForDetectedObject(boundingBox = boundingBox)
+                    progressBar.hide()
+                }
+            }
+            .addOnFailureListener {
+                Log.d(TAG, "detectFaces: Failure: $it")
+                progressBar.hide()
+            }
     }
 
 }

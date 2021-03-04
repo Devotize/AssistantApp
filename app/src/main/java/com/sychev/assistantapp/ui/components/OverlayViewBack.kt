@@ -136,4 +136,9 @@ class OverlayViewBack(
         scope.cancel()
         windowManager.removeView(relative)
     }
+
+    fun update() {
+        windowManager.updateViewLayout(relative, params)
+    }
+
 }
