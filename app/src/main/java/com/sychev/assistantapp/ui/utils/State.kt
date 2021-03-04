@@ -5,5 +5,7 @@ enum class State {
     OPEN,
     //MotionLayout invisible
     CLOSE,
+    //After clicking on the screen button
+    OPENCSREEN,
     Animated
 }

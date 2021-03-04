@@ -20,6 +20,18 @@
         motion:constraintSetStart="@id/center_step2"
         motion:duration="300" />
 
+    <Transition
+        android:id="@+id/click_center_screen"
+        motion:constraintSetEnd="@+id/center_click_screen"
+        motion:constraintSetStart="@id/start_center"
+        motion:duration="300" />
+
+    <Transition
+        android:id="@+id/close_center_screen"
+        motion:constraintSetEnd="@+id/start_center"
+        motion:constraintSetStart="@+id/center_click_screen"
+        motion:duration="300" />
+
     <ConstraintSet android:id="@+id/start_center">
 
         <Constraint android:id="@+id/back_circle">
@@ -165,6 +177,36 @@
 
             <PropertySet android:alpha="1" />
         </Constraint>
+
+        <Constraint android:id="@+id/okey">
+            <Layout
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                motion:layout_constraintBottom_toBottomOf="parent"
+                motion:layout_constraintEnd_toEndOf="parent"
+                motion:layout_constraintStart_toStartOf="parent"
+                motion:layout_constraintTop_toTopOf="parent" />
+            <Transform
+                android:scaleX="0.2"
+                android:scaleY="0.2" />
+
+            <PropertySet android:alpha="0" />
+        </Constraint>
+
+        <Constraint android:id="@+id/crop">
+            <Layout
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                motion:layout_constraintBottom_toBottomOf="parent"
+                motion:layout_constraintEnd_toEndOf="parent"
+                motion:layout_constraintStart_toStartOf="parent"
+                motion:layout_constraintTop_toTopOf="parent" />
+            <Transform
+                android:scaleX="0.2"
+                android:scaleY="0.2" />
+
+            <PropertySet android:alpha="0" />
+        </Constraint>
     </ConstraintSet>
 
     <ConstraintSet android:id="@+id/center_step2"
@@ -176,6 +218,38 @@
                 android:scaleY="1" />
 
             <PropertySet android:visibility="invisible" />
+        </Constraint>
+    </ConstraintSet>
+
+    <ConstraintSet android:id="@+id/center_click_screen"
+        motion:deriveConstraintsFrom="@+id/start_center">
+
+        <Constraint android:id="@+id/okey">
+            <Layout
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                motion:layout_constraintCircle="@id/motion_layout"
+                motion:layout_constraintCircleAngle="225"
+                motion:layout_constraintCircleRadius="70dp" />
+            <Transform
+                android:scaleX="1"
+                android:scaleY="1" />
+
+            <PropertySet android:alpha="1" />
+        </Constraint>
+
+        <Constraint android:id="@+id/crop">
+            <Layout
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                motion:layout_constraintCircle="@id/motion_layout"
+                motion:layout_constraintCircleAngle="135"
+                motion:layout_constraintCircleRadius="70dp" />
+            <Transform
+                android:scaleX="1"
+                android:scaleY="1" />
+
+            <PropertySet android:alpha="1" />
         </Constraint>
     </ConstraintSet>
 </MotionScene>

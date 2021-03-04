@@ -40,5 +40,18 @@
             android:layout_height="50dp"
             android:background="@drawable/ic_stop" />
 
+        <ImageButton
+            android:id="@+id/okey"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@drawable/ic_okey"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <ImageButton
+            android:id="@+id/crop"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@drawable/ic_crop" />
+
     </androidx.constraintlayout.motion.widget.MotionLayout>
 </RelativeLayout>
