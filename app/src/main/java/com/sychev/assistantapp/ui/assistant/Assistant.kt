@@ -2,6 +2,7 @@ package com.sychev.assistantapp.ui.assistant
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.graphics.*
 import android.hardware.display.DisplayManager
 import android.media.FaceDetector
@@ -13,11 +14,13 @@ import android.util.Log
 import android.view.*
 import android.widget.*
 import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.startActivity
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.objects.DetectedObject
 import com.sychev.assistantapp.R
 import com.sychev.assistantapp.ml.ClothesTestModel
+import com.sychev.assistantapp.ui.CameraPhotoActivity
 import com.sychev.assistantapp.ui.TAG
 import com.sychev.assistantapp.ui.components.FrameDrawComponent
 import com.sychev.assistantapp.ui.components.OverlayViewBack
@@ -47,6 +50,7 @@ class Assistant(
     // Coordinates before the start of the movement
     private var prevMoveX = 0
     private var prevMoveY = 0
+
     // Coordinates at the start of the movement
     private var startMoveX = 0.0
     private var startMoveY = 0.0
@@ -91,6 +95,12 @@ class Assistant(
         }
         it.setonClickListenerExit {
             hideComponents()
+        }
+        it.setonClickListenerScreen {
+            val intent = Intent(context, CameraPhotoActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            startActivity(context, intent,null)
         }
     }
 
@@ -291,7 +301,7 @@ class Assistant(
         val inputImage = InputImage.fromBitmap(bitmap, 0)
         val result = faceDetector.process(inputImage)
             .addOnSuccessListener { faces ->
-                for (face in faces){
+                for (face in faces) {
                     val boundingBox = face.boundingBox
                     Log.d(TAG, "detectFaces: BoundingBox: $boundingBox")
                     addCircleForDetectedObject(boundingBox = boundingBox)
