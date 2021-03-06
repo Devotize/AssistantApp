@@ -121,7 +121,14 @@ class OverlayViewBack(
     fun setonClickListenerScreen(handler: () -> Unit) {
         motion.findViewById<ImageButton>(R.id.screen).setOnClickListener {
             //my anim
-            handler()
+            state = State.Animated
+            scope.launch {
+                motion.setTransition(R.id.close_center)
+                motion.transitionToEnd()
+                motion.awaitTransitionComplete(R.id.start_center)
+                state = State.CLOSE
+                handler()
+            }
         }
     }
 
