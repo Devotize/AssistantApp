@@ -3,18 +3,25 @@ package com.sychev.assistantapp.ui.components
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
+import android.graphics.Rect
 import android.os.Build
+import android.util.Log
 import android.view.Gravity
 import android.view.ViewGroup
 import android.view.WindowManager
+import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.ImageView
+import android.widget.Toast
+import androidx.core.content.ContextCompat
+import com.sychev.assistantapp.R
+import com.sychev.assistantapp.ui.TAG
 
 class ScreenshotComponent(
     private val context: Context,
     private val windowManager: WindowManager
 ) {
-    val rootView = FrameLayout(context)
+    private val rootView = FrameLayout(context)
     private val imageView = ImageView(context)
     private val layoutParams = WindowManager.LayoutParams(
         ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -46,6 +53,31 @@ class ScreenshotComponent(
             windowManager.addView(rootView, layoutParams)
             rootView.addView(imageView)
         }
+    }
+
+    fun addCircleForDetectedObject(boundingBox: Rect, onClick: () -> Unit){
+        val x = boundingBox.left
+        val y = boundingBox.top
+
+        val params = FrameLayout.LayoutParams(
+            60,
+            60,
+        )
+        params.leftMargin = x
+        params.topMargin = y
+
+
+        val circleView = Button(context)
+        circleView.background = ContextCompat.getDrawable(context, R.drawable.orange_circle_shape)
+        circleView.setOnClickListener {
+            onClick()
+        }
+        rootView.addView(circleView, params)
+    }
+
+    fun removeCirclesForDetectedObject() {
+        hide()
+        show()
     }
 
     fun hide() {

@@ -3,6 +3,7 @@ package com.sychev.assistantapp.ui.components
 import android.content.Context
 import android.graphics.PixelFormat
 import android.os.Build
+import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
@@ -10,6 +11,8 @@ import android.widget.ImageButton
 import android.widget.Toast
 import androidx.constraintlayout.motion.widget.MotionLayout
 import com.sychev.assistantapp.R
+import com.sychev.assistantapp.ui.TAG
+import com.sychev.assistantapp.ui.assistant.Assistant
 import com.sychev.assistantapp.ui.utils.State
 import com.sychev.assistantapp.ui.utils.awaitTransitionComplete
 
@@ -21,12 +24,12 @@ import kotlinx.coroutines.*
 
 class OverlayViewBack(
     context: Context,
-    private val windowManager: WindowManager
+    private val windowManager: WindowManager,
 ) {
     private val relative: View = View.inflate(context, R.layout.overlay_view_back, null)
     private val motion: MotionLayout = relative.findViewById(R.id.motion_layout) as MotionLayout
     private val params = WindowManager.LayoutParams()
-    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default)
+    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Main)
     var state = State.CLOSE
         private set
 
@@ -125,19 +128,31 @@ class OverlayViewBack(
         }
     }
 
+    fun setOnClickListenerDone(handler: () -> Unit) {
+        motion.findViewById<ImageButton>(R.id.done).setOnClickListener {
+            handler()
+        }
+    }
+
+    fun setOnClickListenerCrop(handler: () -> Unit) {
+        motion.findViewById<ImageButton>(R.id.crop).setOnClickListener {
+            handler()
+        }
+    }
+
     fun setonClickListenerCamera(handler: () -> Unit) {
         motion.findViewById<ImageButton>(R.id.stop).setOnClickListener {
             //my anim
             state = State.Animated
             scope.launch {
-                motion.setTransition(R.id.close_center)
-                motion.transitionToEnd()
-                motion.awaitTransitionComplete(R.id.start_center)
+                handler()
+//                motion.setTransition(R.id.close_center)
+//                motion.transitionToEnd()
+//                motion.awaitTransitionComplete(R.id.start_center)
                 motion.setTransition(R.id.click_center_screen)
                 motion.transitionToEnd()
                 motion.awaitTransitionComplete(R.id.center_click_screen)
                 state = State.OPENCSREEN
-                handler()
             }
         }
     }

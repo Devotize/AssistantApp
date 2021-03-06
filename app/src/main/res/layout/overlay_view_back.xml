@@ -41,7 +41,7 @@
             android:background="@drawable/ic_stop" />
 
         <ImageButton
-            android:id="@+id/okey"
+            android:id="@+id/done"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:background="@drawable/ic_okey"

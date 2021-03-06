@@ -178,7 +178,7 @@
             <PropertySet android:alpha="1" />
         </Constraint>
 
-        <Constraint android:id="@+id/okey">
+        <Constraint android:id="@+id/done">
             <Layout
                 android:layout_width="50dp"
                 android:layout_height="50dp"
@@ -224,7 +224,7 @@
     <ConstraintSet android:id="@+id/center_click_screen"
         motion:deriveConstraintsFrom="@+id/start_center">
 
-        <Constraint android:id="@+id/okey">
+        <Constraint android:id="@+id/done">
             <Layout
                 android:layout_width="50dp"
                 android:layout_height="50dp"
