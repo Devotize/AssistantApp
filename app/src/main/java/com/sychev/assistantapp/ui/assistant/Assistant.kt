@@ -27,11 +27,19 @@ import com.sychev.assistantapp.ui.components.OverlayViewBack
 import com.sychev.assistantapp.ui.components.ProgressBarComponent
 import com.sychev.assistantapp.ui.components.ScreenshotComponent
 import com.sychev.assistantapp.ui.utils.State
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.tensorflow.lite.DataType
+import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
+import java.io.ByteArrayInputStream
+import java.io.DataInputStream
 
 
 class Assistant(
@@ -85,23 +93,38 @@ class Assistant(
     private val progressBar = ProgressBarComponent(context, windowManager)
 
 
-    private val viewBack = OverlayViewBack(context, windowManager).also {
-        it.show()
-        it.setonClickListenerCamera {
-            screenshotComponent.setScreenshot(takeScreenshot())
-            screenshotComponent.show()
-            recycleAssistantView()
-            screenshotComponent.getScreenshot()?.let { screenshot -> detectFaces(screenshot) }
+    private val viewBack = OverlayViewBack(context, windowManager).also { overlaytBack ->
+        overlaytBack.setonClickListenerCamera {
+            CoroutineScope(Dispatchers.Main).launch {
+                screenshotComponent.setScreenshot(takeScreenshot())
+                screenshotComponent.show()
+                recycleAssistantView()
+                screenshotComponent.getScreenshot()?.let { screenshot -> detectFaces(screenshot) }
+
+            }
+//            screenshotComponent.getScreenshot()?.let {detectClothes(it)}
         }
-        it.setonClickListenerExit {
+        overlaytBack.setonClickListenerExit {
             hideComponents()
         }
-        it.setonClickListenerScreen {
-            val intent = Intent(context, CameraPhotoActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            }
-            startActivity(context, intent,null)
+        overlaytBack.setOnClickListenerCrop {
+            screenshotComponent.removeCirclesForDetectedObject()
+            frameDrawComponent.show()
         }
+        overlaytBack.setOnClickListenerDone {
+            frameDrawComponent.hide()
+            frameDrawComponent.boundingBox.hide()
+            screenshotComponent.getScreenshot()?.let { btm ->
+                screenshotComponent.setScreenshot(
+                    cropBitmap(
+                        btm,
+                        frameDrawComponent.boundingBox.left,
+                        frameDrawComponent.boundingBox.top,
+                        frameDrawComponent.boundingBox.right,
+                        frameDrawComponent.boundingBox.bottom
+                    )
+                )
+            }
     }
 
     @SuppressLint("WrongConstant")
@@ -149,8 +172,9 @@ class Assistant(
         setOnTouchListener()
     }
 
-    private fun takeScreenshot(): Bitmap {
-        rootView.visibility = View.GONE
+    private suspend fun takeScreenshot(): Bitmap {
+        close()
+        delay(350)
         Log.d(TAG, "takeScreenshot: assistantParent: ${rootView.parent}")
         val image = imageReader.acquireNextImage()
         val planes: Array<Plane> = image.planes
@@ -166,7 +190,7 @@ class Assistant(
         bmp.copyPixelsFromBuffer(buffer)
         val newBitmap = Bitmap.createBitmap(bmp, 0, 0, image.width, image.height)
         image.close()
-        rootView.visibility = View.VISIBLE
+        open()
         return newBitmap
     }
 
@@ -177,11 +201,13 @@ class Assistant(
     }
 
     fun open() {
+        viewBack.show()
         windowManager.addView(rootView, windowParams)
     }
 
     fun close() {
         if (rootView.parent != null) {
+            viewBack.hide()
             windowManager.removeView(rootView)
         }
     }
@@ -193,26 +219,6 @@ class Assistant(
             windowManager.removeView(rootView)
             windowManager.addView(rootView, windowParams)
         }
-    }
-
-    private fun addCircleForDetectedObject(boundingBox: Rect) {
-        val x = boundingBox.left
-        val y = boundingBox.top
-
-        val params = FrameLayout.LayoutParams(
-            60,
-            60,
-        )
-        params.leftMargin = x
-        params.topMargin = y
-
-
-        val view = Button(context)
-        view.background = ContextCompat.getDrawable(context, R.drawable.orange_circle_shape)
-        view.setOnClickListener {
-            Toast.makeText(context, "Clicked on FACE!", Toast.LENGTH_SHORT).show()
-        }
-        screenshotComponent.rootView.addView(view, params)
     }
 
     private fun cropBitmap(bitmap: Bitmap, left: Int, top: Int, right: Int, bottom: Int): Bitmap {
@@ -256,7 +262,7 @@ class Assistant(
                     if (!isMoved) {
                         if (viewBack.state == State.CLOSE) {
                             viewBack.open()
-                        } else if (viewBack.state == State.OPEN) {
+                        } else if (viewBack.state == State.OPEN || viewBack.state == State.OPENCSREEN) {
                             viewBack.close()
                         }
                     } else {
@@ -284,16 +290,23 @@ class Assistant(
         val resizedTImage = imageProcessor.process(tImage)
         val inputBuffer = TensorBuffer.createFixedSize(intArrayOf(1, 416, 416, 3), DataType.FLOAT32)
         inputBuffer.loadBuffer(resizedTImage.buffer)
-        Log.d(TAG, "detectClothes: inputBuffer: $inputBuffer")
         val output = model.process(inputBuffer)
-        Log.d(TAG, "detectClothes: output: $output")
-        val feature0 = output.outputFeature0AsTensorBuffer
-        val feature1 = output.outputFeature1AsTensorBuffer
-        Log.d(TAG, "detectClothes: feature0: ${feature0.floatArray}")
-        Log.d(TAG, "detectClothes: feature1: ${feature1.floatArray}")
-
+        val feature0 = output.outputFeature0AsTensorBuffer.buffer
+        val feature1 = output.outputFeature1AsTensorBuffer.buffer
+        val arr = ByteArray(feature0.remaining())
+//        Log.d(TAG, "detectClothes: ${feature0.getFloat(feature0.remaining())}")
+        feature0.rewind()
+        for (i in 1..feature0.capacity() / 4) {
+//            Log.d(TAG, "detectClothes: ${feature0.float}")
+//        feature0.get(arr)
+//        Log.d(TAG, "detectClothes: $arr")
+        }
+        val value1 = feature0.float
+        val value2 = feature0.float
+        Log.d(TAG, "detectClothes: val1: $value1, val2; $value2")
 
         model.close()
+
     }
 
     private fun detectFaces(bitmap: Bitmap) {
@@ -303,8 +316,11 @@ class Assistant(
             .addOnSuccessListener { faces ->
                 for (face in faces) {
                     val boundingBox = face.boundingBox
-                    Log.d(TAG, "detectFaces: BoundingBox: $boundingBox")
-                    addCircleForDetectedObject(boundingBox = boundingBox)
+                    screenshotComponent.addCircleForDetectedObject(
+                        boundingBox = boundingBox,
+                        onClick = {
+                            Log.d(TAG, "detectFaces: clicked on $face")
+                    })
                     progressBar.hide()
                 }
             }
