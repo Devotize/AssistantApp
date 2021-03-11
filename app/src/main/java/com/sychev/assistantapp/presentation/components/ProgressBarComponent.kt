@@ -1,4 +1,4 @@
-package com.sychev.assistantapp.ui.components
+package com.sychev.assistantapp.presentation.components
 
 import android.content.Context
 import android.graphics.PixelFormat
