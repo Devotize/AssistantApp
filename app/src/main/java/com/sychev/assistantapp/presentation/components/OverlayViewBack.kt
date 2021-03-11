@@ -1,20 +1,16 @@
-package com.sychev.assistantapp.ui.components
+package com.sychev.assistantapp.presentation.components
 
 import android.content.Context
 import android.graphics.PixelFormat
 import android.os.Build
-import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
 import android.widget.ImageButton
-import android.widget.Toast
 import androidx.constraintlayout.motion.widget.MotionLayout
 import com.sychev.assistantapp.R
-import com.sychev.assistantapp.ui.TAG
-import com.sychev.assistantapp.ui.assistant.Assistant
-import com.sychev.assistantapp.ui.utils.State
-import com.sychev.assistantapp.ui.utils.awaitTransitionComplete
+import com.sychev.assistantapp.presentation.utils.State
+import com.sychev.assistantapp.presentation.utils.awaitTransitionComplete
 
 import kotlinx.coroutines.*
 

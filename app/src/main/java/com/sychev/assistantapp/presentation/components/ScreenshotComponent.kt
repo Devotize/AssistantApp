@@ -1,21 +1,18 @@
-package com.sychev.assistantapp.ui.components
+package com.sychev.assistantapp.presentation.components
 
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
 import android.graphics.Rect
 import android.os.Build
-import android.util.Log
 import android.view.Gravity
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.ImageView
-import android.widget.Toast
 import androidx.core.content.ContextCompat
 import com.sychev.assistantapp.R
-import com.sychev.assistantapp.ui.TAG
 
 class ScreenshotComponent(
     private val context: Context,

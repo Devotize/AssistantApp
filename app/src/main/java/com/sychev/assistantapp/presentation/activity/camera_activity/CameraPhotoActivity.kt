@@ -1,4 +1,4 @@
-package com.sychev.assistantapp.ui
+package com.sychev.assistantapp.presentation.activity.camera_activity
 
 import android.Manifest
 import android.annotation.SuppressLint

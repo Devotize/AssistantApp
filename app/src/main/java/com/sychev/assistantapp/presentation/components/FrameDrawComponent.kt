@@ -1,4 +1,4 @@
-package com.sychev.assistantapp.ui.components
+package com.sychev.assistantapp.presentation.components
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -8,8 +8,8 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.ViewGroup
 import android.view.WindowManager
-import com.sychev.assistantapp.ui.assistant.Assistant
-import com.sychev.assistantapp.ui.view.FrameDrawView
+import com.sychev.assistantapp.presentation.assistant.Assistant
+import com.sychev.assistantapp.presentation.view.FrameDrawView
 
 class FrameDrawComponent(
     private val context: Context,

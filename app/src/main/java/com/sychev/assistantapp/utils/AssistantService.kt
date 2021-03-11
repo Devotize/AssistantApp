@@ -11,9 +11,13 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import com.sychev.assistantapp.R
-import com.sychev.assistantapp.ui.assistant.Assistant
-import com.sychev.assistantapp.ui.STOP_FOREGROUND_SERVICE
-import com.sychev.assistantapp.ui.TAG
+import com.sychev.assistantapp.presentation.activity.main_activity.STOP_FOREGROUND_SERVICE
+import com.sychev.assistantapp.presentation.activity.main_activity.TAG
+import com.sychev.assistantapp.presentation.assistant.Assistant
+import com.sychev.assistantapp.repository.ClothesRepository
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+
 
 const val CHANNEL_ID = "assistant_notification_id"
 const val CHANNEL_NAME = "assistant_channel_name"
@@ -23,10 +27,13 @@ const val CODE_EXIT_INTENT = 3213
 
 
 @RequiresApi(Build.VERSION_CODES.Q)
+@AndroidEntryPoint
 class AssistantService : Service() {
     private var mResultCode: Int = 0
     private var mData: Intent? = null
     private var assistant: Assistant? = null
+    @Inject
+    lateinit var repository: ClothesRepository
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
@@ -69,7 +76,8 @@ class AssistantService : Service() {
 
         assistant = Assistant(
             context = applicationContext,
-            mProjection
+            mProjection,
+            repository
         )
         assistant?.open()
         Log.d(TAG, "onStartCommand: Assistant after = $assistant")
