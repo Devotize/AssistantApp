@@ -41,6 +41,7 @@ import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
 import javax.inject.Inject
+import kotlin.math.absoluteValue
 
 class Assistant
     constructor(
@@ -336,8 +337,9 @@ class Assistant
         val output = model.process(inputBuffer)
         val feature0 = output.outputFeature0AsTensorBuffer
         val feature1 = output.outputFeature1AsTensorBuffer
-        Log.d(TAG, "detectClothes: ${feature0.floatArray[0].toString()}")
-        Log.d(TAG, "detectClothes: feature1.shape = ${feature1.floatArray.toList()}")
+        Log.d(TAG, "detectClothes: ${feature0.floatArray.toList()}")
+        Log.d(TAG, "detectClothes: feature1 = ${feature1.floatArray.toList()}")
+
         val rect = Rect()
 
         model.close()
