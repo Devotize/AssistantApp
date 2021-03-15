@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    tools:context=".ui.CameraPhotoActivity">
+    tools:context=".ui.ActivityImage">
 
     <ImageView
         android:id="@+id/displayImageView"
@@ -14,13 +14,13 @@
         tools:layout_constraintEnd_toEndOf="parent"
         tools:layout_constraintStart_toStartOf="parent"
         tools:layout_constraintTop_toTopOf="parent"
-        android:src="@drawable/ic_camera"
+        android:scaleType="fitXY"
         />
 
     <ImageButton
         android:id="@+id/buttonBack"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         android:background="@drawable/ic_back"
