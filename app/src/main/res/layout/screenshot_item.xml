@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    >
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/white"
+        android:alpha="0.8"
+        >
+
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/screenshot_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="16dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="100dp">
+
+        <ImageView
+            android:id="@+id/screenshot_image_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitXY"
+            android:adjustViewBounds="true"
+            />
+
+        <FrameLayout
+            android:id="@+id/screenshot_frame"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
+        <ProgressBar
+            android:id="@+id/progress_bar_screenshot_item"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_gravity="center"
+            android:visibility="gone"
+            />
+
+    </FrameLayout>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:layout_gravity="bottom"
+            >
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingTop="20dp"
+            android:layout_gravity="top"
+            android:gravity="center"
+            >
+
+            <ImageButton
+                android:id="@+id/face_button"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:padding="3dp"
+                android:src="@drawable/ic_baseline_face_24"
+                android:scaleType="fitCenter"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/white_circle_shape"/>
+
+            <ImageButton
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="3dp"
+                android:background="@drawable/white_circle_shape"
+                android:scaleType="fitCenter"
+                android:layout_marginEnd="8dp"
+                android:src="@drawable/ic_exit"/>
+
+            <ImageButton
+                android:id="@+id/crop_button"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="3dp"
+                android:background="@drawable/white_circle_shape"
+                android:scaleType="fitCenter"
+                android:layout_marginEnd="8dp"
+                android:src="@drawable/ic_crop"/>
+
+            <ImageButton
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="3dp"
+                android:background="@drawable/white_circle_shape"
+                android:scaleType="fitCenter"
+                android:layout_marginEnd="8dp"
+                android:src="@drawable/ic_okey"/>
+
+            <ImageButton
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:padding="3dp"
+                android:src="@drawable/t_shirt_icon"
+                android:scaleType="fitCenter"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/white_circle_shape"/>
+
+        </LinearLayout>
+
+        </FrameLayout>
+
+</FrameLayout>

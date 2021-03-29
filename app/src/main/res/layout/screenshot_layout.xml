@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    >
+
+    <com.yuyakaido.android.cardstackview.CardStackView
+        android:id="@+id/card_stack_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+    </com.yuyakaido.android.cardstackview.CardStackView>
+
+    <ProgressBar
+        android:id="@+id/progress_bar_screenshot_layout"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:visibility="gone"
+        android:layout_gravity="center"
+        >
+
+    </ProgressBar>
+
+    <FrameLayout
+        android:id="@+id/top_overlay_screenshot_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clickable="false"
+        android:background="@color/transparent"
+        />
+
+</FrameLayout>
