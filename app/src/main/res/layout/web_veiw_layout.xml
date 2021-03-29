@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:clickable="false"
+    >
+
+    <ImageButton
+        android:id="@+id/close_web_view_button"
+        android:layout_width="35dp"
+        android:layout_height="35dp"
+        android:src="@drawable/ic_baseline_cancel_24"
+        android:background="@color/transparent"
+        android:layout_margin="8dp"
+        android:layout_gravity="end"
+        />
+
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="500dp"
+        android:layout_marginBottom="6dp"
+        android:layout_marginStart="35dp"
+        android:layout_marginEnd="35dp"
+        android:orientation="vertical"
+        >
+
+        <WebView
+            android:id="@+id/web_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            />
+
+        <ProgressBar
+            android:id="@+id/progress_bar_web_view"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:visibility="gone"
+            android:layout_gravity="center"/>
+
+    </FrameLayout>
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal"
+        >
+
+        <ImageButton
+            android:id="@+id/previous_button"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="10dp"
+            android:src="@drawable/ic_baseline_navigate_before_24"
+            android:background="@drawable/orange_circle_shape"
+            />
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="@color/orange_700"
+            android:gravity="center"
+            >
+
+            <TextView
+                android:id="@+id/current_page_text_view"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:textSize="20sp"
+                android:textColor="@color/black"
+                android:textAlignment="center"
+                />
+            <TextView
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:text="/"
+                android:textSize="20sp"
+                android:textColor="@color/black"
+                android:textAlignment="center"
+                />
+            <TextView
+                android:id="@+id/total_page_text_view"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:textSize="20sp"
+                android:textColor="@color/black"
+                android:textAlignment="center"
+                />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <ImageButton
+            android:id="@+id/next_button"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="10dp"
+            android:src="@drawable/ic_baseline_navigate_next_24"
+            android:background="@drawable/orange_circle_shape"
+            />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+
+</LinearLayout>

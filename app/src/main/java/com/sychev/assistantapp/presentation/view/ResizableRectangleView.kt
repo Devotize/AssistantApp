@@ -1,4 +1,4 @@
-package com.sychev.assistantapp.ui.view
+package com.sychev.assistantapp.presentation.view
 
 import android.R
 import android.annotation.SuppressLint
@@ -8,7 +8,7 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import androidx.annotation.DrawableRes
-import com.sychev.assistantapp.ui.TAG
+import com.sychev.assistantapp.presentation.activity.main_activity.TAG
 import java.util.*
 
 @SuppressLint("ViewConstructor")

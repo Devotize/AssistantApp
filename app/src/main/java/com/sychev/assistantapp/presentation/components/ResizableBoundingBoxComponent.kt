@@ -1,4 +1,4 @@
-package com.sychev.assistantapp.ui.components
+package com.sychev.assistantapp.presentation.components
 
 import android.content.Context
 import android.graphics.PixelFormat
@@ -6,7 +6,7 @@ import android.os.Build
 import android.view.Gravity
 import android.view.ViewGroup
 import android.view.WindowManager
-import com.sychev.assistantapp.ui.view.ResizableRectangleView
+import com.sychev.assistantapp.presentation.view.ResizableRectangleView
 
 class ResizableBoundingBoxComponent(
     private val context: Context,

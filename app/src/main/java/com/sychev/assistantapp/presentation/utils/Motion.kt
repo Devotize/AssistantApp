@@ -1,7 +1,6 @@
-package com.sychev.assistantapp.ui.utils
+package com.sychev.assistantapp.presentation.utils
 
 import androidx.constraintlayout.motion.widget.MotionLayout
-import androidx.constraintlayout.motion.widget.TransitionAdapter
 import kotlinx.coroutines.*
 
 /**

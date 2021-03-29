@@ -1,4 +1,4 @@
-package com.sychev.assistantapp.ui.view
+package com.sychev.assistantapp.presentation.view
 
 import android.content.Context
 import android.graphics.Canvas

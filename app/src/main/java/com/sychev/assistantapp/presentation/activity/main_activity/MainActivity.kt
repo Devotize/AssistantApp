@@ -1,16 +1,13 @@
-package com.sychev.assistantapp.ui
+package com.sychev.assistantapp.presentation.activity.main_activity
 
 import android.content.Context
 import android.content.Intent
-import android.media.projection.MediaProjectionManager
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.viewModels
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
@@ -18,9 +15,10 @@ import androidx.compose.material.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.setContent
-import androidx.compose.ui.unit.dp
-import com.sychev.assistantapp.R
+import com.sychev.assistantapp.repository.ClothesRepository
 import com.sychev.assistantapp.utils.AssistantService
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 const val TAG = "AppDebug"
 const val ACTION_MANAGE_OVERLAY_PERMISSION_CODE = 123

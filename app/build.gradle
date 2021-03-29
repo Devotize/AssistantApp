@@ -2,6 +2,8 @@ plugins {
     id 'com.android.application'
     id 'kotlin-android'
     id 'kotlin-kapt'
+    id 'com.google.gms.google-services'
+    id 'dagger.hilt.android.plugin'
 }
 
 android {
@@ -76,6 +78,18 @@ dependencies {
     //rx
     implementation 'io.reactivex.rxjava3:rxandroid:3.0.0'
     implementation 'io.reactivex.rxjava3:rxjava:3.0.0'
+    //firebase
+    implementation platform('com.google.firebase:firebase-bom:26.6.0')
+    implementation 'com.google.firebase:firebase-analytics-ktx'
+    //deploying tflite model
+    implementation 'com.google.firebase:firebase-ml-modeldownloader'
+    implementation 'org.tensorflow:tensorflow-lite:2.3.0'
+    //retrofit
+    implementation "com.squareup.retrofit2:retrofit:2.9.0"
+    implementation "com.squareup.retrofit2:converter-gson:2.9.0"
+    //hilt
+    implementation "com.google.dagger:hilt-android:2.31.2-alpha"
+    kapt "com.google.dagger:hilt-compiler:2.31.2-alpha"
 
     testImplementation 'junit:junit:4.+'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'

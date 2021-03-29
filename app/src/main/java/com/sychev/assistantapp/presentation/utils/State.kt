@@ -1,4 +1,4 @@
-package com.sychev.assistantapp.ui.utils
+package com.sychev.assistantapp.presentation.utils
 
 enum class State {
     //MotionLayout visible

@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "766146914815",
+    "project_id": "assistant-48d40",
+    "storage_bucket": "assistant-48d40.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:766146914815:android:05f65a26fe8d70d3df1fca",
+        "android_client_info": {
+          "package_name": "com.sychev.assistantapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "766146914815-2ta249at0t0i9f3067g81kpi9u8ca5vd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBz0st5wcR1AP6BagG5DxqgHNUHTcB4-qM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "766146914815-2ta249at0t0i9f3067g81kpi9u8ca5vd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

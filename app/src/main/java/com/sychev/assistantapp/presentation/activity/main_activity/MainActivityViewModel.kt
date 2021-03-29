@@ -1,4 +1,4 @@
-package com.sychev.assistantapp.ui
+package com.sychev.assistantapp.presentation.activity.main_activity
 
 import android.app.Activity
 import android.content.Context
@@ -15,7 +15,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.objects.DetectedObject
-import com.sychev.assistantapp.ui.assistant.Assistant
+import com.sychev.assistantapp.presentation.assistant.Assistant
 import com.sychev.assistantapp.utils.MyObjectDetector
 import com.theartofdev.edmodo.cropper.CropImage
 import com.theartofdev.edmodo.cropper.CropImageView
@@ -44,14 +44,6 @@ class MainActivityViewModel: ViewModel() {
 
     fun changeIsAssistantActive() {
         isAssistantActive.value = !isAssistantActive.value
-    }
-
-    fun startAssistant(context: Context, mProjection: MediaProjection) {
-        assistant = Assistant(
-            context = context,
-            mediaProjection = mProjection
-        )
-        assistant?.open()
     }
 
     fun stopAssistant() {
