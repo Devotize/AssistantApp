@@ -61,8 +61,6 @@ class OverlayViewBack(
     }
 
     fun open() {
-        if (state == State.OPEN) return
-
         state = State.Animated
 
         scope.launch {
@@ -83,9 +81,7 @@ class OverlayViewBack(
         windowManager.updateViewLayout(relative, params)
     }
 
-    fun close(handler: () -> Unit = {}) {
-        if (state == State.CLOSE) return
-
+    fun close() {
         state = State.Animated
 
         params.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
@@ -97,7 +93,6 @@ class OverlayViewBack(
             motion.transitionToEnd()
             motion.awaitTransitionComplete(R.id.start_center)
             state = State.CLOSE
-            handler()
         }
     }
 
@@ -110,19 +105,29 @@ class OverlayViewBack(
 
     fun setonClickListenerExit(handler: () -> Unit) {
         motion.findViewById<ImageButton>(R.id.exit).setOnClickListener {
-            close(handler)
+            //my anim
+            handler()
         }
     }
 
-    fun setonClickListenerGallery(handler: () -> Unit) {
+    fun setonClickListenerSettings(handler: () -> Unit) {
         motion.findViewById<ImageButton>(R.id.data).setOnClickListener {
-            close(handler)
+            //my anim
+            handler()
         }
     }
 
     fun setonClickListenerScreen(handler: () -> Unit) {
         motion.findViewById<ImageButton>(R.id.screen).setOnClickListener {
-            close(handler)
+            //my anim
+            state = State.Animated
+            scope.launch {
+                motion.setTransition(R.id.close_center)
+                motion.transitionToEnd()
+                motion.awaitTransitionComplete(R.id.start_center)
+                state = State.CLOSE
+                handler()
+            }
         }
     }
 

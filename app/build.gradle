@@ -90,6 +90,8 @@ dependencies {
     //hilt
     implementation "com.google.dagger:hilt-android:2.31.2-alpha"
     kapt "com.google.dagger:hilt-compiler:2.31.2-alpha"
+    //tinder alike swipe
+    implementation "com.yuyakaido.android:card-stack-view:2.3.4"
 
     testImplementation 'junit:junit:4.+'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'

@@ -21,6 +21,7 @@ import com.google.mlkit.vision.face.FaceDetection
 import com.sychev.assistantapp.R
 import com.sychev.assistantapp.domain.model.DetectedClothes
 import com.sychev.assistantapp.ml.ClothesTestModel
+import com.sychev.assistantapp.network.model.DetectedClothesDto
 import com.sychev.assistantapp.presentation.activity.camera_activity.CameraPhotoActivity
 import com.sychev.assistantapp.presentation.activity.main_activity.TAG
 import com.sychev.assistantapp.presentation.components.*
@@ -53,7 +54,6 @@ class Assistant
     private val layoutInflater =
         context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
     private val rootView = layoutInflater.inflate(R.layout.assistant_layout, null)
-    private val faceDetector = FaceDetection.getClient()
     private var detectedClothes: DetectedClothes? = null
 
     private var heightPx: Int = 0
@@ -93,9 +93,10 @@ class Assistant
         }
 
     private val frameDrawComponent = FrameDrawComponent(context, windowManager, this)
-    private val screenshotComponent = ScreenshotComponent(context, windowManager)
+    private val screenshotComponent = ScreenshotComponent(context, windowManager, this)
     private val progressBar = ProgressBarComponent(context, windowManager)
-    private val webViewComponent = WebViewComponent(context, windowManager)
+    val webViewComponent = WebViewComponent(context, windowManager)
+    private val detectedClothesComponent = DetectedClothesComponent(context, windowManager, this)
 
 
     private val viewBack = OverlayViewBack(context, windowManager).also { overlayBack ->
@@ -103,11 +104,11 @@ class Assistant
             CoroutineScope(Dispatchers.Main).launch {
                 screenshotComponent.setScreenshot(takeScreenshot())
                 screenshotComponent.show()
-                recycleAssistantView()
+//                recycleAssistantView()
 //                screenshotComponent.getScreenshot()?.let { screenshot -> detectFaces(screenshot) }
-                screenshotComponent.getScreenshot()?.let {
-                    detectedClothes = detectClothes(it)
-                }
+//                screenshotComponent.getScreenshot()?.let {
+//                    detectedClothes = detectClothes(it)
+//                }
             }
         }
         overlayBack.setonClickListenerExit {
@@ -121,15 +122,15 @@ class Assistant
             frameDrawComponent.hide()
             frameDrawComponent.boundingBox.hide()
             screenshotComponent.getScreenshot()?.let { btm ->
-                screenshotComponent.setScreenshot(
-                    cropBitmap(
-                        btm,
-                        frameDrawComponent.boundingBox.left,
-                        frameDrawComponent.boundingBox.top,
-                        frameDrawComponent.boundingBox.right,
-                        frameDrawComponent.boundingBox.bottom
-                    )
-                )
+//                screenshotComponent.setScreenshot(
+//                    cropBitmap(
+//                        btm,
+//                        frameDrawComponent.boundingBox.left,
+//                        frameDrawComponent.boundingBox.top,
+//                        frameDrawComponent.boundingBox.right,
+//                        frameDrawComponent.boundingBox.bottom
+//                    )
+//                )
             }
         }
         overlayBack.setonClickListenerScreen {
@@ -139,29 +140,7 @@ class Assistant
             startActivity(context, intent, null)
         }
         overlayBack.setonClickListenerSettings {
-            //just for testing purposes
-            detectedClothes = DetectedClothes("test", Rect())
-
-            detectedClothes?.let{dc ->
-                CoroutineScope(Main).launch {
-                    dc.image?.let {
-                        progressBar.show()
-                        Log.d(TAG, "making a query from assistant")
-//                        val detectedClothes =  repository.sendDetectedClothes(it)
-                        delay(2000)
-                        val urls = ArrayList<String>()
-                        FakeDetectedClothesData.detectedObjects.forEach {
-                            it.url?.let { it1 -> urls.add(it1) }
-                        }
-                        webViewComponent.setUrls(urls)
-                        progressBar.hide()
-                        webViewComponent.show()
-                        overlayBack.close()
-                    }
-
-                }
-            }
-
+            fakePostRequest()
         }
     }
 
@@ -240,8 +219,10 @@ class Assistant
     }
 
     fun open() {
-        viewBack.show()
-        windowManager.addView(rootView, windowParams)
+        if (rootView.parent == null){
+            viewBack.show()
+            windowManager.addView(rootView, windowParams)
+        }
     }
 
     fun close() {
@@ -258,28 +239,6 @@ class Assistant
             windowManager.removeView(rootView)
             windowManager.addView(rootView, windowParams)
         }
-    }
-
-    private fun cropBitmap(
-        bitmap: Bitmap,
-        left: Int,
-        top: Int,
-        right: Int,
-        bottom: Int
-    ): Bitmap {
-        val croppedBtm = Bitmap.createBitmap(
-            bitmap.width,
-            bitmap.height,
-            Bitmap.Config.ARGB_8888
-        )
-        val canvas = Canvas(croppedBtm)
-        val paint = Paint()
-        paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
-        val srcRect = Rect(left, top, right, bottom)
-        val destRect =
-            Rect(left, top, right, bottom)
-        canvas.drawBitmap(bitmap, srcRect, destRect, Paint())
-        return croppedBtm
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -354,27 +313,6 @@ class Assistant
         return list
     }
 
-    private fun detectFaces(bitmap: Bitmap) {
-        progressBar.show()
-        val inputImage = InputImage.fromBitmap(bitmap, 0)
-        val result = faceDetector.process(inputImage)
-            .addOnSuccessListener { faces ->
-                for (face in faces) {
-                    val boundingBox = face.boundingBox
-                    screenshotComponent.addCircleForDetectedObject(
-                        boundingBox = boundingBox,
-                        onClick = {
-                            Log.d(TAG, "detectFaces: clicked on $face")
-                        })
-                }
-                progressBar.hide()
-            }
-            .addOnFailureListener {
-                Log.d(TAG, "detectFaces: Failure: $it")
-                progressBar.hide()
-            }
-    }
-
     private fun downloadModel() {
         progressBar.show()
         var interpreter: Interpreter? = null
@@ -396,6 +334,30 @@ class Assistant
                 Log.d(TAG, "downloadModel: $it")
                 progressBar.hide()
             }
+    }
+
+    fun fakePostRequest() {
+        //just for testing purposes
+        detectedClothes = DetectedClothes("test", Rect())
+
+        detectedClothes?.let{dc ->
+            CoroutineScope(Main).launch {
+                dc.image?.let {
+                    progressBar.show()
+                    Log.d(TAG, "making a query from assistant")
+//                        val detectedClothes =  repository.sendDetectedClothes(it)
+                    delay(2000)
+                    FakeDetectedClothesData.detectedObjects.forEach {
+                    }
+//                    webViewComponent.setUrls(urls)
+                    detectedClothesComponent.setDetectedClothes(FakeDetectedClothesData.detectedObjects)
+                    progressBar.hide()
+                    detectedClothesComponent.show()
+                }
+
+            }
+        }
+
     }
 
 }

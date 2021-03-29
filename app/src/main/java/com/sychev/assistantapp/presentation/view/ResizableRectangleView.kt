@@ -124,6 +124,7 @@ class ResizableRectangleView(
         rectRight =  if (left < right) right else left
         rectTop = if (top < bottom) top else bottom
         rectBottom = if (top < bottom) bottom else top
+//        Log.d(TAG, "onDraw: rectLeft: $rectLeft, rectRight: $rectRight, rectTop: $rectTop, rectBottom: $rectBottom")
     }
 
     // events when touching the screen

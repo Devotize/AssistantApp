@@ -38,12 +38,20 @@
             android:foregroundServiceType="mediaProjection"
             android:stopWithTask="false"
             />
-        <activity android:name=".ui.ActivityImage"
 
 
 
         <activity android:name=".presentation.activity.camera_activity.CameraPhotoActivity"
             android:theme="@style/AppTheme"/>
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.sychev.android.fileProvider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"/>
+        </provider>
     </application>
 
 </manifest>

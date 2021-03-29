@@ -2,12 +2,14 @@ package com.sychev.assistantapp.presentation.components
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.PixelFormat
+import android.graphics.*
 import android.os.Build
+import android.util.Log
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.ViewGroup
 import android.view.WindowManager
+import com.sychev.assistantapp.presentation.activity.main_activity.TAG
 import com.sychev.assistantapp.presentation.assistant.Assistant
 import com.sychev.assistantapp.presentation.view.FrameDrawView
 
@@ -27,11 +29,9 @@ class FrameDrawComponent(
             false
         }
     }
-    private val layoutParams = WindowManager.LayoutParams(
+    private var layoutParams = WindowManager.LayoutParams(
         ViewGroup.LayoutParams.WRAP_CONTENT,
         ViewGroup.LayoutParams.WRAP_CONTENT,
-        0,
-        0,
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
         } else {
@@ -42,10 +42,12 @@ class FrameDrawComponent(
                 WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
                 WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
         PixelFormat.TRANSLUCENT
-    ).apply {
-        gravity = Gravity.CENTER
-    }
+    )
     val boundingBox = ResizableBoundingBoxComponent(context, windowManager)
+
+    fun setLayoutParams(params: WindowManager.LayoutParams) {
+        layoutParams = params
+    }
 
     fun show() {
         if (rootView.parent == null){
@@ -57,6 +59,30 @@ class FrameDrawComponent(
         if (rootView.parent != null) {
             windowManager.removeView(rootView)
         }
+    }
+
+    fun cropBitmap(
+        bitmap: Bitmap,
+        width: Int,
+        height: Int,
+        left: Int,
+        top: Int,
+        right: Int,
+        bottom: Int
+    ): Bitmap {
+        val croppedBtm = Bitmap.createBitmap(
+            width,
+            height,
+            Bitmap.Config.ARGB_8888
+        )
+        val canvas = Canvas(croppedBtm)
+        val paint = Paint()
+        paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
+        val srcRect = Rect(left, top, right, bottom)
+        val destRect =
+            Rect(left, top, right, bottom)
+        canvas.drawBitmap(bitmap, srcRect, destRect, Paint())
+        return croppedBtm
     }
 
 
